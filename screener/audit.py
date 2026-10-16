@@ -97,9 +97,11 @@ def diagnostics(live: pd.DataFrame, load_tags, excluded: set[str]) -> list[dict]
         missing = [m for m in METRICS if m in live.columns and pd.isna(r[m])]
         age = r.get("fundamentals_age_days")
         old = pd.notna(age) and age > 100
-        if not missing and not old:
+        zero_debt = "supposée nulle" in str(r.get("flags") or "")
+        if not missing and not old and not zero_debt:
             continue
-        groups = sorted({g for m in missing for g in NEEDS.get(m, [])})
+        groups = sorted({g for m in missing for g in NEEDS.get(m, [])} |
+                        ({"debt"} if zero_debt else set()))
         tags = load_tags(int(r["cik"]))
         fresh = {}
         if old:
@@ -118,7 +120,7 @@ def diagnostics(live: pd.DataFrame, load_tags, excluded: set[str]) -> list[dict]
                           >= asof - pd.Timedelta(days=500)]
             for g in groups:
                 hit = recent[recent["tag"].str.contains("|".join(KEYWORDS[g]))]
-                hit = hit.sort_values("n", ascending=False).head(8)
+                hit = hit.sort_values("n", ascending=False).head(15)
                 cands[g] = [f"{a}:{b} ({c}, {d})" for a, b, c, d in
                             zip(hit["taxonomy"], hit["tag"], hit["unit"], hit["last_end"])]
         out.append({"ticker": t, "name": r.get("name"), "sector": r.get("sector"),

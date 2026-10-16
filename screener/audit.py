@@ -64,3 +64,49 @@ def build(*, info, prices, history, live, states, elig_counts, status, dropped, 
         "flags": dict(flag_counts.most_common(10)),
         "status": status,
     }
+
+
+NEEDS = {
+    "rev_growth": ["revenue"], "rev_accel": ["revenue"], "oi_change_assets": ["operating"],
+    "gp_assets": ["gross", "operating"], "accruals": ["net_income", "cfo"],
+    "leverage": ["debt", "operating"], "fcf_yield": ["cfo", "capex", "shares"],
+    "ebit_ev": ["operating", "shares"], "mom_12_1": [], "mom_6_1": [], "vol_12m": [],
+}
+KEYWORDS = {
+    "revenue": ("Revenue", "Sales"),
+    "operating": ("OperatingIncome", "IncomeLossFromContinuingOperationsBefore"),
+    "gross": ("GrossProfit", "CostOf"),
+    "net_income": ("NetIncomeLoss", "ProfitLoss"),
+    "cfo": ("NetCashProvidedByUsedInOperatingActivities",),
+    "capex": ("PaymentsToAcquire", "PaymentsFor"),
+    "shares": ("SharesOutstanding", "WeightedAverageNumberOf"),
+    "debt": ("Debt", "Borrowings", "NotesPayable"),
+}
+
+
+def diagnostics(live: pd.DataFrame, load_tags, excluded: set[str]) -> list[dict]:
+    """Pour chaque membre actuel classable mais incomplet : mesures manquantes et étiquettes
+    XBRL candidates déclarées récemment. Sert à compléter config/xbrl_concepts.yaml."""
+    out = []
+    asof = pd.Timestamp(live["asof"].iloc[0]) if "asof" in live else pd.Timestamp.now()
+    for t, r in live.iterrows():
+        if r.get("sector") in excluded or pd.isna(r.get("cik")):
+            continue
+        missing = [m for m in METRICS if m in live.columns and pd.isna(r[m])]
+        if not missing:
+            continue
+        groups = sorted({g for m in missing for g in NEEDS.get(m, [])})
+        tags = load_tags(int(r["cik"]))
+        cands = {}
+        if tags is not None and len(tags) and groups:
+            recent = tags[pd.to_datetime(tags["last_end"], errors="coerce")
+                          >= asof - pd.Timedelta(days=500)]
+            for g in groups:
+                hit = recent[recent["tag"].str.contains("|".join(KEYWORDS[g]))]
+                hit = hit.sort_values("n", ascending=False).head(8)
+                cands[g] = [f"{a}:{b} ({c}, {d})" for a, b, c, d in
+                            zip(hit["taxonomy"], hit["tag"], hit["unit"], hit["last_end"])]
+        out.append({"ticker": t, "name": r.get("name"), "sector": r.get("sector"),
+                    "missing": missing, "flags": r.get("flags"),
+                    "known_date": r.get("known_date"), "candidates": cands})
+    return out

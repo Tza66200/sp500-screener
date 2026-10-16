@@ -330,6 +330,8 @@ def run(offline: bool = False) -> None:
     audit = A.build(info=info, prices=prices, history=history, live=live, states=states,
                     elig_counts=elig_counts, status=status, dropped=dropped,
                     start=str(valid_start.date()))
+    R.dump("diagnostics.json", A.diagnostics(
+        live, SEC.load_tags, set(settings["universe"]["excluded_sectors"])))
     R.write_all(settings=settings, protocol=protocol, live=live, runs=runs, groups=groups,
                 bench=bench_series, rf_daily=rf_daily, ic_obs=ic_obs, audit=audit,
                 status=status, hypo=hypo, next_review_date=nrev, today=today,

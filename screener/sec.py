@@ -24,6 +24,7 @@ FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 PERIODIC_FORMS = {"10-K", "10-Q", "10-K/A", "10-Q/A", "10-KT", "10-QT"}
 SEC_DIR = DATA_DIR / "sec"
 UNITS = {"USD", "shares"}
+FACTS_VERSION = 2   # changer cette valeur force le retéléchargement de tous les faits
 
 
 def wanted_tags(concepts: dict) -> dict[tuple[str, str], str]:
@@ -77,6 +78,20 @@ def parse_companyfacts(data: dict, tags: dict[tuple[str, str], str]) -> pd.DataF
     return df.dropna(subset=["end", "val", "filed"])
 
 
+def tag_inventory(data: dict) -> pd.DataFrame:
+    """Inventaire de toutes les étiquettes déclarées (pour diagnostiquer les données manquantes)."""
+    rows = []
+    for tax, nodes in (data.get("facts") or {}).items():
+        for tag, node in nodes.items():
+            for unit, entries in (node.get("units") or {}).items():
+                per = [e for e in entries if (e.get("form") or "") in PERIODIC_FORMS]
+                if not per:
+                    continue
+                rows.append((tax, tag, unit, len(per), max(e.get("end") or "" for e in per),
+                             max(e.get("filed") or "" for e in per)))
+    return pd.DataFrame(rows, columns=["taxonomy", "tag", "unit", "n", "last_end", "last_filed"])
+
+
 def _latest_periodic(filings: pd.DataFrame) -> str | None:
     p = filings[filings["form"].isin(PERIODIC_FORMS)]
     if p.empty:
@@ -93,6 +108,9 @@ def refresh(ciks: list[int], concepts: dict, per_second: float = 8.0, workers: i
     tags = wanted_tags(concepts)
     state_path = SEC_DIR / "state.json"
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
+    if state.get("__version__") != FACTS_VERSION:
+        state = {"__version__": FACTS_VERSION}
+    (SEC_DIR / "tags").mkdir(parents=True, exist_ok=True)
     session = requests.Session()
     summary = {"submissions_ok": 0, "facts_updated": 0, "facts_missing": [], "errors": []}
     metas = []
@@ -112,7 +130,9 @@ def refresh(ciks: list[int], concepts: dict, per_second: float = 8.0, workers: i
                             session=session, allow_404=True)
             if resp is None:
                 return cik, meta, latest, "companyfacts introuvables"
-            parse_companyfacts(resp.json(), tags).to_parquet(facts_path, index=False)
+            data = resp.json()
+            parse_companyfacts(data, tags).to_parquet(facts_path, index=False)
+            tag_inventory(data).to_parquet(SEC_DIR / "tags" / f"{cik}.parquet", index=False)
             updated = True
         return cik, meta, latest, "updated" if updated else "unchanged"
 
@@ -148,6 +168,11 @@ def refresh(ciks: list[int], concepts: dict, per_second: float = 8.0, workers: i
 
 def load_facts(cik: int) -> pd.DataFrame | None:
     p = SEC_DIR / "facts" / f"{cik}.parquet"
+    return pd.read_parquet(p) if p.exists() else None
+
+
+def load_tags(cik: int) -> pd.DataFrame | None:
+    p = SEC_DIR / "tags" / f"{cik}.parquet"
     return pd.read_parquet(p) if p.exists() else None
 
 

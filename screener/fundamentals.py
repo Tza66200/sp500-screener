@@ -269,7 +269,7 @@ class Company:
                         per_tag.append((rank, tag, inst))
                 else:
                     q = build_quarters(t, additive=concept not in NON_ADDITIVE)
-                    if len(q):
+                    if len(q) or len(build_annuals(t)):
                         per_tag.append((rank, tag, q))
             if not per_tag:
                 continue
@@ -369,6 +369,13 @@ class Company:
             return None, None
         j = int(idx[np.argmax(s.end[idx])])
         return s.val[j], s.end[j]
+
+    def material_interest(self, d, assets, threshold=0.003):
+        """Charges d'intérêts significatives (> 0,3 % des actifs) : il existe une dette."""
+        ie = self.ttm_now("interest_expense", d)
+        if ie is None or not assets:
+            return False
+        return abs(ie[1].val[ie[2]]) > threshold * assets
 
     def has_debt_evidence(self, d, years=2):
         lst = self.instants.get("debt_flows") or []
@@ -479,7 +486,7 @@ class Company:
                 debt = (dnc or 0.0) + (dc or 0.0) + (stb or 0.0)
             elif stb is not None:
                 debt = stb
-            elif self.has_debt_evidence(d):
+            elif self.has_debt_evidence(d) or self.material_interest(d, assets):
                 debt = None
                 flags.append("Dette introuvable dans les données XBRL (inconnue)")
             else:

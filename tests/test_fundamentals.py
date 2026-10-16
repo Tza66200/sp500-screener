@@ -136,3 +136,14 @@ def test_annual_long_term_debt_carried_forward(concepts):
     st = comp.state(d("2021-08-06"))          # bilan au 30/06/2021, dette connue au 31/12/2020
     assert st["debt"] == 500
     assert "dernier montant publié" in st["flags"]
+
+
+def test_material_interest_means_debt_unknown(concepts):
+    facts = synthetic_company()
+    rows = []
+    for y, filed in ((2020, "2021-02-20"), (2021, "2022-02-20")):
+        rows.append(fact("interest_expense", "InterestExpense", f"{y}-01-01", f"{y}-12-31", 30,
+                         filed, "10-K"))
+    comp = F.Company(pd.concat([facts, pd.DataFrame(rows)], ignore_index=True), concepts)
+    st = comp.state(d("2022-02-21"))      # 30 d'intérêts pour ~1 033 d'actifs
+    assert st["debt"] is None

@@ -30,6 +30,11 @@ ayant déposé un nouveau rapport sont retéléchargés.
 4. **Actions → Actualisation → Run workflow**. Le premier passage prend 20 à 40 minutes.
 5. Le site est à l'adresse `https://<utilisateur>.github.io/<dépôt>/`.
 
+Après chaque calcul, les fichiers de résultats (`site/data`), le journal et un fichier
+`diagnostics.json` sont aussi copiés dans la branche `publication`. Ce dernier liste, pour chaque
+société incomplète, les mesures manquantes et les étiquettes XBRL candidates : c'est le point de
+départ pour compléter `config/xbrl_concepts.yaml`.
+
 GitHub envoie un e-mail si une actualisation échoue. Le site affiche aussi un avertissement
 si les données ont plus de quatre jours.
 
@@ -86,5 +91,10 @@ python -m pytest -q
 - Pas d'estimations d'analystes : la croissance repose sur les chiffres publiés.
 - Financières et immobilier exclus en V1.
 - Le filtre « offre de rachat » n'est appliqué qu'au classement du jour.
+- Certaines sociétés publient leurs comptes avec des étiquettes XBRL propres (Caterpillar,
+  Ford, Phillips 66…) : la mesure concernée reste alors vide, jamais estimée. Quand une dette
+  existe mais reste introuvable, elle est déclarée inconnue plutôt que nulle.
+- La SEC intègre parfois un rapport à ses données XBRL avec plusieurs semaines de retard ;
+  la fiche de la société le signale.
 
 Police Archivo sous licence SIL Open Font License (`site/fonts/OFL.txt`).

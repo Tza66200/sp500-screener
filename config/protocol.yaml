@@ -1,0 +1,55 @@
+# Protocole de validation pré-enregistré.
+# Rédigé le 16/10/2026, AVANT toute exécution sur données réelles.
+# Règle : on ne modifie ni les variantes, ni les critères, ni les périodes après
+# avoir vu des résultats. La période réservée reste masquée (revealed: false)
+# tant que le modèle n'est pas figé ; on ne la révèle qu'une seule fois.
+
+frozen_on: "2026-10-16"
+
+design_period:
+  start: "2011-03-01"
+  end: "2020-12-31"
+
+subperiods:
+  - ["2011-03-01", "2015-12-31"]
+  - ["2016-01-01", "2020-12-31"]
+
+holdout:
+  start: "2021-01-01"
+  revealed: false           # passer à true UNE SEULE FOIS, quand le modèle est figé
+
+# Variantes comparées à la référence (au plus trois)
+variants:
+  reference: {}
+  equal_weights:
+    weights: {growth: 0.20, momentum: 0.20, quality: 0.20, value: 0.20, risk: 0.20}
+  trend_filter:
+    trend_filter: true
+  fixed_12m:
+    holding: fixed_12m
+
+# Tests de robustesse appliqués à la référence
+robustness:
+  review_shift_1m:
+    review_months: [4, 6, 9, 12]
+  positions_15:
+    n_positions: 15
+  positions_30:
+    n_positions: 30
+  weights_a:
+    weights: {growth: 0.30, momentum: 0.25, quality: 0.20, value: 0.10, risk: 0.15}
+  weights_b:
+    weights: {growth: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
+
+ic_horizons_months: [1, 3, 6, 12, 18]
+
+# Critères de réussite fixés d'avance
+criteria:
+  excess_vs_equal_weight_each_subperiod: >
+    Surperformance annualisée nette de frais de la référence face au S&P 500
+    équipondéré, positive sur chacune des deux sous-périodes.
+  factor_ic_12m_positive: >
+    Corrélation de rang moyenne à 12 mois positive pour chaque facteur conservé.
+  robustness_same_sign: >
+    Surperformance nette face à l'équipondéré de même signe que la référence
+    pour au moins 4 des 5 tests de robustesse.

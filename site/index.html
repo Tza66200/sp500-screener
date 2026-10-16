@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Screener S&amp;P 500</title>
+<meta name="description" content="Classement quantitatif des actions du S&amp;P 500 pour du position trading sur 12 à 18 mois, actualisé chaque soir.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23172230'/%3E%3Cpath d='M7 22l6-6 4 4 8-9' stroke='%234FC1BC' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="app.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Aller au contenu</a>
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <div class="brand">
+      <h1 class="wordmark">Screener S&amp;P&nbsp;500</h1>
+      <p class="tagline">Position trading sur 12 à 18 mois, modèle <span data-bind="model_version">1.0</span></p>
+    </div>
+    <div class="freshness" id="freshness" aria-live="polite">Chargement des données…</div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Changer de thème">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="board-section wrap" aria-labelledby="board-title">
+    <div class="board-head">
+      <h2 id="board-title">Portefeuille modèle</h2>
+      <p class="board-note" id="board-note"></p>
+    </div>
+    <div class="board" id="board" role="list"></div>
+    <div class="next-review" id="next-review"></div>
+  </section>
+
+  <nav class="tabs wrap" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-classement" aria-controls="panel-classement" data-tab="classement">Classement</button>
+    <button role="tab" id="tab-portefeuille" aria-controls="panel-portefeuille" data-tab="portefeuille">Portefeuille</button>
+    <button role="tab" id="tab-backtest" aria-controls="panel-backtest" data-tab="backtest">Backtest</button>
+    <button role="tab" id="tab-facteurs" aria-controls="panel-facteurs" data-tab="facteurs">Facteurs</button>
+    <button role="tab" id="tab-donnees" aria-controls="panel-donnees" data-tab="donnees">Données</button>
+    <button role="tab" id="tab-methode" aria-controls="panel-methode" data-tab="methode">Méthode</button>
+  </nav>
+
+  <!-- Classement -->
+  <section class="panel wrap" role="tabpanel" id="panel-classement" aria-labelledby="tab-classement">
+    <div class="toolbar">
+      <label class="field grow"><span class="sr-only">Rechercher</span>
+        <input type="search" id="q" placeholder="Rechercher un ticker ou une société" autocomplete="off"></label>
+      <label class="field"><span class="sr-only">Secteur</span>
+        <select id="sector"><option value="">Tous les secteurs</option></select></label>
+      <label class="check"><input type="checkbox" id="only-eligible" checked> Éligibles seulement</label>
+      <button type="button" class="btn" id="weights-toggle" aria-expanded="false" aria-controls="weights">Pondérations</button>
+      <span class="downloads"><a class="btn ghost" href="data/classement.xlsx" download>Excel</a><a class="btn ghost" href="data/classement.csv" download>CSV</a></span>
+    </div>
+    <div class="weights" id="weights" hidden>
+      <div class="weights-head">
+        <p>Simulation : le classement est recalculé dans votre navigateur avec ces poids. Le portefeuille modèle et le backtest restent sur les poids de référence.</p>
+        <button type="button" class="btn ghost" id="weights-reset">Revenir aux poids de référence</button>
+      </div>
+      <div class="weights-grid" id="weights-grid"></div>
+    </div>
+    <p class="changes" id="changes"></p>
+    <div class="table-wrap">
+      <table class="rank-table" id="rank-table">
+        <thead><tr>
+          <th scope="col" class="num sortable" data-sort="rank">Rang</th>
+          <th scope="col" class="sortable" data-sort="ticker">Société</th>
+          <th scope="col" class="hide-sm">Secteur</th>
+          <th scope="col" class="num sortable" data-sort="score">Score</th>
+          <th scope="col" class="fac sortable" data-sort="growth" title="Croissance">Croiss.</th>
+          <th scope="col" class="fac sortable" data-sort="momentum" title="Momentum">Mom.</th>
+          <th scope="col" class="fac sortable" data-sort="quality" title="Qualité">Qual.</th>
+          <th scope="col" class="fac sortable" data-sort="value" title="Valorisation">Valo.</th>
+          <th scope="col" class="fac sortable" data-sort="risk" title="Risque (élevé = peu volatil)">Risque</th>
+          <th scope="col" class="num hide-sm sortable" data-sort="confidence" title="Part des 11 mesures disponibles">Données</th>
+          <th scope="col" class="hide-md">Résultats</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="table-foot" id="rank-foot"></p>
+  </section>
+
+  <!-- Portefeuille -->
+  <section class="panel wrap" role="tabpanel" id="panel-portefeuille" aria-labelledby="tab-portefeuille" hidden>
+    <div class="cols">
+      <div class="col-main">
+        <h3>Lignes détenues</h3>
+        <div class="table-wrap"><table class="data-table" id="holdings-table"></table></div>
+        <h3>Si la revue avait lieu aujourd'hui</h3>
+        <div id="hypo"></div>
+      </div>
+      <aside class="col-side">
+        <h3>Règles</h3>
+        <ul class="rules" id="rules"></ul>
+        <h3>Répartition par secteur</h3>
+        <div id="sector-bars"></div>
+        <h3>Revues récentes</h3>
+        <div id="recent-reviews"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Backtest -->
+  <section class="panel wrap" role="tabpanel" id="panel-backtest" aria-labelledby="tab-backtest" hidden>
+    <div class="notice" id="holdout-notice"></div>
+    <h3>Critères fixés avant les tests</h3>
+    <ul class="criteria" id="criteria"></ul>
+    <div class="chart-head">
+      <h3>Valeur de 1 $ investi</h3>
+      <div class="series-toggles" id="variant-toggles"></div>
+    </div>
+    <figure class="chart" id="equity-chart"></figure>
+    <h3>Baisse depuis le plus haut (référence)</h3>
+    <figure class="chart small" id="dd-chart"></figure>
+    <h3>Résultats sur la période de conception</h3>
+    <div class="table-wrap"><table class="data-table" id="metrics-table"></table></div>
+    <h3>Référence par sous-période</h3>
+    <div class="table-wrap"><table class="data-table" id="sub-table"></table></div>
+    <h3>Rendements annuels</h3>
+    <div class="table-wrap"><table class="data-table" id="yearly-table"></table></div>
+    <div class="prose small-print" id="bt-limits"></div>
+  </section>
+
+  <!-- Facteurs -->
+  <section class="panel wrap" role="tabpanel" id="panel-facteurs" aria-labelledby="tab-facteurs" hidden>
+    <div class="prose">
+      <p>Chaque fin de mois, on mesure la corrélation de rang entre le score d'un facteur et le rendement des mois suivants. Une valeur positive et stable signifie que le facteur classe correctement les titres. Au-dessus de 0,05 en moyenne, c'est déjà un signal utile ; au-dessus de 0,10, un signal fort.</p>
+    </div>
+    <h3>Corrélation moyenne selon l'horizon</h3>
+    <div class="table-wrap"><table class="data-table ic-table" id="ic-table"></table></div>
+    <h3>Évolution avec l'horizon</h3>
+    <figure class="chart" id="decay-chart"></figure>
+    <h3>Corrélation à 12 mois, année par année</h3>
+    <div class="table-wrap"><table class="data-table ic-table" id="ic-year-table"></table></div>
+  </section>
+
+  <!-- Données -->
+  <section class="panel wrap" role="tabpanel" id="panel-donnees" aria-labelledby="tab-donnees" hidden>
+    <div class="cols">
+      <div class="col-main">
+        <h3>Fraîcheur et sources</h3>
+        <dl class="facts" id="sources"></dl>
+        <h3>Univers du backtest et biais de survivance</h3>
+        <div id="survivorship"></div>
+        <h3>Titres éligibles au fil du temps</h3>
+        <figure class="chart small" id="elig-chart"></figure>
+      </div>
+      <aside class="col-side">
+        <h3>Aujourd'hui</h3>
+        <div id="elig-today"></div>
+        <h3>Disponibilité des mesures</h3>
+        <div id="coverage"></div>
+        <h3>Signalements fréquents</h3>
+        <div id="flags"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Méthode -->
+  <section class="panel wrap prose method" role="tabpanel" id="panel-methode" aria-labelledby="tab-methode" hidden>
+    <h3>Ce que fait cet outil</h3>
+    <p>Il classe chaque soir les actions du S&amp;P&nbsp;500 selon cinq facteurs, tient un portefeuille modèle de 20 lignes revu quatre fois par an, et mesure honnêtement ce que ce modèle aurait donné depuis 2011. C'est une aide à la décision, pas un conseil en investissement ni un système d'ordres automatiques.</p>
+
+    <h3>Les cinq facteurs</h3>
+    <div class="table-wrap"><table class="data-table" id="method-metrics"></table></div>
+    <p>Chaque mesure est convertie en rang de 0 à 100 à chaque date : au sein du secteur pour les fondamentaux, sur tout l'univers pour le momentum et la volatilité. Un facteur n'est calculé que si au moins la moitié de ses mesures sont disponibles, et le score global exige au moins quatre facteurs sur cinq. Les données manquantes ne sont jamais remplacées.</p>
+    <p>La valorisation utilise des rendements (EBIT sur valeur d'entreprise, free cash-flow sur capitalisation) plutôt que des multiples : un multiple calculé sur un bénéfice négatif devient inclassable. La moyenne mobile à 200 jours ne fait pas partie du score ; elle est testée comme variante.</p>
+
+    <h3>Filtres</h3>
+    <ul>
+      <li>Banques, assureurs et immobilier exclus en V1 : leurs comptes ne se lisent pas avec ces mesures.</li>
+      <li>Dernier rapport trimestriel ou annuel déposé il y a plus de six mois.</li>
+      <li>Volume moyen inférieur à 20 millions de dollars par jour.</li>
+      <li>Société visée par une offre de rachat (formulaires DEFM14A, SC 14D9… déposés depuis moins de six mois). Ce filtre n'est appliqué qu'au classement du jour : l'historique complet de ces dépôts n'est pas disponible gratuitement.</li>
+      <li>Veto qualitatif consigné dans <code>config/vetoes.yaml</code>, avec sa justification. Un veto ne modifie jamais le score.</li>
+    </ul>
+
+    <h3>Données datées à leur publication</h3>
+    <p>Les fondamentaux viennent des dépôts XBRL de la SEC. Pour chaque période, seule la première valeur publiée est conservée, et elle ne devient utilisable qu'à la séance qui suit son dépôt. Les trimestres manquants sont reconstitués à partir des cumuls (le quatrième trimestre est l'année moins les neuf premiers mois), puis additionnés sur 12 mois glissants. Le nombre d'actions est celui connu à la date, corrigé des fractionnements ultérieurs.</p>
+
+    <h3>Portefeuille</h3>
+    <p>20 lignes à poids égaux, cinq au maximum par secteur. Revue mi-mars, mi-mai, mi-août et mi-novembre, une fois les rapports des grandes sociétés déposés. Un titre entre quand il atteint le top 20 et reste tant qu'il ne sort pas du top 50. Les ordres sont simulés à la clôture de la séance qui suit la revue, avec 0,10&nbsp;% de frais par transaction.</p>
+
+    <h3>Protocole de test</h3>
+    <p>Règles, variantes et critères de réussite ont été écrits dans <code>config/protocol.yaml</code> avant le premier calcul sur données réelles. Le modèle se conçoit sur 2011–2020 ; les résultats depuis 2021 restent masqués jusqu'à ce que le modèle soit figé, puis sont révélés une seule fois. Le seul vrai test reste l'avenir : suivez le modèle sur le papier avant d'y engager du capital.</p>
+
+    <h3>Limites connues</h3>
+    <ul>
+      <li>Yahoo Finance ne fournit généralement pas les cours des sociétés retirées de la cote. Elles sont absentes du backtest, ce qui l'embellit ; l'onglet Données chiffre ce biais.</li>
+      <li>Le secteur des anciens membres est déduit de leur code SIC, une approximation du classement GICS.</li>
+      <li>Les estimations et révisions des analystes ne sont pas disponibles gratuitement : la croissance repose sur les chiffres publiés.</li>
+      <li>Aucun impôt n'est pris en compte. Pour un investisseur européen, le change et la fiscalité des dividendes américains réduisent le rendement.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <p>Données : SEC EDGAR, Yahoo Finance (via yfinance, source non officielle), composition historique fja05680/sp500, Wikipedia. Outil d'aide à la décision, sans garantie ; ceci n'est pas un conseil en investissement.</p>
+</footer>
+
+<dialog class="drawer" id="drawer" aria-labelledby="drawer-title">
+  <div class="drawer-inner">
+    <button type="button" class="drawer-close" id="drawer-close" aria-label="Fermer">×</button>
+    <div id="drawer-body"></div>
+  </div>
+</dialog>
+<div class="tooltip" id="tooltip" role="status" hidden></div>
+</body>
+</html>

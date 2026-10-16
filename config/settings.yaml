@@ -1,0 +1,51 @@
+# Paramètres du modèle de référence.
+# Ils ont été fixés AVANT tout test. Toute modification doit être consignée
+# (commit Git avec justification) et ne doit pas être guidée par les résultats
+# de la période réservée (voir protocol.yaml).
+
+model_version: "1.0"
+
+universe:
+  # V1 : banques, assureurs et immobilier exclus (métriques EV/EBITDA, FCF, ROIC inadaptées).
+  excluded_sectors: ["Financials", "Real Estate"]
+  min_dollar_volume_usd: 20000000      # volume moyen en dollars sur 63 séances
+  max_fundamentals_age_days: 183       # dernier 10-K/10-Q disponible depuis plus de 6 mois -> exclu
+
+# Pondérations de référence (somme = 1)
+weights:
+  growth: 0.25
+  momentum: 0.25
+  quality: 0.20
+  value: 0.15
+  risk: 0.15
+
+scoring:
+  min_factors: 4            # au moins 4 facteurs sur 5 pour être classé
+  min_sector_size: 8        # en dessous, les fondamentaux sont comparés à tout l'univers
+
+portfolio:
+  n_positions: 20
+  max_sector_fraction: 0.25 # 5 titres sur 20
+  hold_rank: 50             # on conserve tant que le titre reste dans le top 50
+  review_months: [3, 5, 8, 11]
+  review_day: 15            # mi-mois, après le dépôt des 10-K / 10-Q des grandes sociétés
+  cost_per_trade: 0.0010    # 0,10 % du montant échangé, à chaque achat ou vente
+  holding: band             # "band" (bande de tolérance) ou "fixed_12m"
+  trend_filter: false       # filtre cours > moyenne mobile 200 jours (variante)
+
+backtest:
+  start: "2011-03-01"
+  min_eligible: 150         # première revue retenue quand au moins 150 titres sont éligibles
+  benchmarks:
+    sp500: "^SP500TR"       # S&P 500 dividendes réinvestis
+    equal_weight: "RSP"     # S&P 500 équipondéré (ETF, dividendes réinvestis)
+  risk_free: "^IRX"         # taux des bons du Trésor à 13 semaines
+
+data:
+  history_start: "2009-06-01"
+  price_chunk: 40
+  price_pause_seconds: 2.0
+  sec_requests_per_second: 8
+  # Formulaires signalant une offre de rachat en cours (société cible)
+  merger_forms: ["DEFM14A", "PREM14A", "DEFM14C", "PREM14C", "SC 14D9", "SC TO-T", "SC 13E3"]
+  merger_lookback_days: 180

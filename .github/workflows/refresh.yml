@@ -1,0 +1,76 @@
+name: Actualisation
+
+# Chaque soir de semaine après la clôture américaine (22 h 40 UTC, soit 0 h 40 à Vienne
+# en été), puis déploiement du site. Fonctionne même navigateur et ordinateur éteints.
+on:
+  schedule:
+    - cron: "40 22 * * 1-5"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["screener/**", "site/**", "config/**", "requirements.txt", ".github/workflows/**"]
+
+permissions:
+  contents: write      # enregistrer l'historique des classements
+  pages: write         # publier le site
+  id-token: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurer le cache des données
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Collecte et calculs
+        env:
+          SEC_CONTACT_EMAIL: ${{ secrets.SEC_CONTACT_EMAIL }}
+        run: python -m screener.pipeline run
+
+      - name: Sauvegarder le cache des données
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+
+      - name: Enregistrer l'historique des classements
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add history
+          if ! git diff --cached --quiet; then
+            git commit -m "Classement du $(date -u +%F)"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

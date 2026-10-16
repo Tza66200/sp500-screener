@@ -1,0 +1,125 @@
+# Correspondance concept -> étiquettes XBRL (us-gaap sauf mention), par ordre de priorité.
+# "duration" : flux sur une période (compte de résultat, flux de trésorerie)
+# "instant"  : stock à une date (bilan)
+
+revenue:
+  kind: duration
+  tags:
+    - Revenues
+    - RevenueFromContractWithCustomerExcludingAssessedTax
+    - RevenueFromContractWithCustomerIncludingAssessedTax
+    - SalesRevenueNet
+    - SalesRevenueGoodsNet
+    - SalesRevenueServicesNet
+
+cost_of_revenue:
+  kind: duration
+  tags:
+    - CostOfRevenue
+    - CostOfGoodsAndServicesSold
+    - CostOfGoodsSold
+    - CostOfServices
+
+gross_profit:
+  kind: duration
+  tags:
+    - GrossProfit
+
+operating_income:
+  kind: duration
+  tags:
+    - OperatingIncomeLoss
+
+pretax_income:
+  kind: duration
+  tags:
+    - IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest
+    - IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments
+
+net_income:
+  kind: duration
+  tags:
+    - NetIncomeLoss
+    - ProfitLoss
+    - NetIncomeLossAvailableToCommonStockholdersBasic
+
+cfo:
+  kind: duration
+  tags:
+    - NetCashProvidedByUsedInOperatingActivities
+    - NetCashProvidedByUsedInOperatingActivitiesContinuingOperations
+
+capex:
+  kind: duration
+  tags:
+    - PaymentsToAcquirePropertyPlantAndEquipment
+    - PaymentsToAcquireProductiveAssets
+    - PaymentsForCapitalImprovements
+
+dna:
+  kind: duration
+  tags:
+    - DepreciationDepletionAndAmortization
+    - DepreciationAndAmortization
+    - DepreciationAmortizationAndAccretionNet
+    - Depreciation
+
+diluted_shares:
+  kind: duration
+  tags:
+    - WeightedAverageNumberOfDilutedSharesOutstanding
+
+assets:
+  kind: instant
+  tags:
+    - Assets
+
+cash:
+  kind: instant
+  tags:
+    - CashAndCashEquivalentsAtCarryingValue
+    - CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+    - Cash
+
+short_term_investments:
+  kind: instant
+  tags:
+    - MarketableSecuritiesCurrent
+    - ShortTermInvestments
+    - AvailableForSaleSecuritiesDebtSecuritiesCurrent
+
+debt_total_lt:
+  kind: instant
+  tags:
+    - LongTermDebt
+    - LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities
+
+debt_noncurrent:
+  kind: instant
+  tags:
+    - LongTermDebtNoncurrent
+    - LongTermDebtAndCapitalLeaseObligations
+
+debt_current:
+  kind: instant
+  tags:
+    - LongTermDebtCurrent
+    - LongTermDebtAndCapitalLeaseObligationsCurrent
+    - DebtCurrent
+
+short_term_borrowings:
+  kind: instant
+  tags:
+    - ShortTermBorrowings
+    - CommercialPaper
+
+shares_outstanding:
+  kind: instant
+  taxonomy: dei
+  tags:
+    - EntityCommonStockSharesOutstanding
+
+shares_outstanding_gaap:
+  kind: instant
+  tags:
+    - CommonStockSharesOutstanding

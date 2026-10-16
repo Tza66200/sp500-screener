@@ -1,0 +1,11 @@
+# Vérification qualitative : titres écartés manuellement du portefeuille modèle.
+# Un veto ne modifie jamais le score ; il retire seulement le titre des candidats,
+# avec une justification consignée. Modifiable directement depuis GitHub.
+#
+# Exemple :
+# - ticker: XYZ
+#   date: "2026-11-15"
+#   reason: "Plus-value de cession exceptionnelle qui gonfle le résultat opérationnel"
+#   until: "2027-05-15"     # optionnel ; sans date, le veto reste actif
+
+vetoes: []

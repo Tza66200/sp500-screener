@@ -49,6 +49,7 @@ jobs:
       - name: Collecte et calculs
         env:
           SEC_CONTACT_EMAIL: ${{ secrets.SEC_CONTACT_EMAIL }}
+          SCREENER_DEBUG_CIKS: "34088,721371,21344,1534701,59478,1841666,879169,906163,936340,320193,40533"
         run: |
           set -o pipefail
           python -m screener.pipeline run 2>&1 | tee run.log
@@ -89,6 +90,7 @@ jobs:
           tmp=$(mktemp -d)
           cp -r site/data/. "$tmp"/
           cp run.log "$tmp"/journal.log
+          if [ -d data/sec/raw ]; then mkdir -p "$tmp"/debug && cp data/sec/raw/* "$tmp"/debug/; fi
           cd "$tmp"
           git init -q -b publication
           git config user.name "github-actions[bot]"

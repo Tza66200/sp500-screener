@@ -24,6 +24,8 @@ FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 PERIODIC_FORMS = {"10-K", "10-Q", "10-K/A", "10-Q/A", "10-KT", "10-QT"}
 SEC_DIR = DATA_DIR / "sec"
 UNITS = {"USD", "shares"}
+import os
+DEBUG_CIKS = set(filter(None, os.environ.get("SCREENER_DEBUG_CIKS", "").split(",")))
 FACTS_VERSION = 2   # changer cette valeur force le retéléchargement de tous les faits
 
 
@@ -108,8 +110,12 @@ def refresh(ciks: list[int], concepts: dict, per_second: float = 8.0, workers: i
     tags = wanted_tags(concepts)
     state_path = SEC_DIR / "state.json"
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
-    if state.get("__version__") != FACTS_VERSION:
-        state = {"__version__": FACTS_VERSION}
+    # Toute modification de la liste d'étiquettes (xbrl_concepts.yaml) force un retéléchargement.
+    import hashlib
+    version = f"{FACTS_VERSION}-" + hashlib.sha1(
+        repr(sorted(tags.items())).encode()).hexdigest()[:10]
+    if state.get("__version__") != version:
+        state = {"__version__": version}
     (SEC_DIR / "tags").mkdir(parents=True, exist_ok=True)
     session = requests.Session()
     summary = {"submissions_ok": 0, "facts_updated": 0, "facts_missing": [], "errors": []}
@@ -131,6 +137,14 @@ def refresh(ciks: list[int], concepts: dict, per_second: float = 8.0, workers: i
             if resp is None:
                 return cik, meta, latest, "companyfacts introuvables"
             data = resp.json()
+            if str(cik) in DEBUG_CIKS:
+                import gzip
+                (SEC_DIR / "raw").mkdir(parents=True, exist_ok=True)
+                with gzip.open(SEC_DIR / "raw" / f"{cik}.json.gz", "wt", encoding="utf-8") as fh:
+                    json.dump(data, fh)
+                with gzip.open(SEC_DIR / "raw" / f"{cik}-submissions.json.gz", "wt",
+                               encoding="utf-8") as fh:
+                    json.dump(sub.json(), fh)
             parse_companyfacts(data, tags).to_parquet(facts_path, index=False)
             tag_inventory(data).to_parquet(SEC_DIR / "tags" / f"{cik}.parquet", index=False)
             updated = True

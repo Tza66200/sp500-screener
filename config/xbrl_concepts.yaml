@@ -36,6 +36,15 @@ pretax_income:
     - IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest
     - IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments
 
+interest_expense:
+  kind: duration
+  tags:
+    - InterestExpense
+    - InterestExpenseNonoperating
+    - InterestAndDebtExpense
+    - InterestExpenseDebt
+    - InterestExpenseNet
+
 net_income:
   kind: duration
   tags:

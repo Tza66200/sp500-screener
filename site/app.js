@@ -114,9 +114,8 @@ function renderBoard() {
     const sell = h.action === "vendre";
     return `<button class="tile${sell ? " sell" : ""}" role="listitem" data-ticker="${esc(h.ticker)}" style="--i:${i}"
       aria-label="${esc(h.ticker)} ${esc(h.name || "")}, rang ${isNum(h.rank) ? h.rank : "non classé"}${sell ? ", à vendre à la prochaine revue" : ""}">
-      ${sell ? '<span class="flag">à vendre</span>' : ""}
       <span class="tk">${esc(h.ticker)}</span>
-      <span class="nm">${esc(h.name || "ancien membre")}</span>
+      ${sell ? '<span class="nm flag">À vendre</span>' : `<span class="nm">${esc(h.name || "ancien membre")}</span>`}
       <span class="ln"><span class="rk">${isNum(h.rank) ? "n° " + h.rank : "exclu"}</span>
       <span class="${tone(h.return)}">${pct(h.return, 0, true)}</span></span></button>`;
   }).join("");

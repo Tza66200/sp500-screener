@@ -333,12 +333,24 @@ class Company:
         if oi is None:
             oi = self.ttm_now("pretax_income", d)
             oi_concept = "pretax_income"
-            if oi is not None:
-                flags.append("Résultat opérationnel absent : résultat avant impôts utilisé")
         if oi:
             tag, s, i = oi
             out["oi_ttm"] = s.val[i]
             out["oi_ttm_prev"], _ = self.ttm_year_ago(oi_concept, tag, s.end[i], d)
+            if oi_concept == "pretax_income":
+                # EBIT ≈ résultat avant impôts + charges d'intérêts, sur les mêmes périodes
+                ie = self.ttm_now("interest_expense", d)
+                if ie and ie[1].end[ie[2]] == s.end[i]:
+                    ie_tag, ie_s, ie_i = ie
+                    out["oi_ttm"] += abs(ie_s.val[ie_i])
+                    prev_ie, _ = self.ttm_year_ago("interest_expense", ie_tag, ie_s.end[ie_i], d)
+                    if out["oi_ttm_prev"] is not None and prev_ie is not None:
+                        out["oi_ttm_prev"] += abs(prev_ie)
+                    else:
+                        out["oi_ttm_prev"] = None
+                    flags.append("Résultat opérationnel absent : avant impôts + intérêts utilisé")
+                else:
+                    flags.append("Résultat opérationnel absent : résultat avant impôts utilisé")
 
         # Marge brute : étiquette dédiée, sinon CA - coût des ventes sur la même période
         gp = self.ttm_now("gross_profit", d)

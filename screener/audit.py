@@ -93,10 +93,23 @@ def diagnostics(live: pd.DataFrame, load_tags, excluded: set[str]) -> list[dict]
         if r.get("sector") in excluded or pd.isna(r.get("cik")):
             continue
         missing = [m for m in METRICS if m in live.columns and pd.isna(r[m])]
-        if not missing:
+        age = r.get("fundamentals_age_days")
+        old = pd.notna(age) and age > 100
+        if not missing and not old:
             continue
         groups = sorted({g for m in missing for g in NEEDS.get(m, [])})
         tags = load_tags(int(r["cik"]))
+        fresh = {}
+        if old:
+            from . import sec as SEC
+            fl = SEC.load_filings(int(r["cik"]))
+            if fl is not None and len(fl):
+                per = fl[fl["form"].isin(SEC.PERIODIC_FORMS)].sort_values("filingDate")
+                if len(per):
+                    fresh["last_periodic_filing"] = f"{per['form'].iloc[-1]} {per['filingDate'].iloc[-1].date()} {per['accessionNumber'].iloc[-1]}"
+            if tags is not None and len(tags):
+                fresh["facts_last_filed"] = str(tags["last_filed"].max())
+                fresh["taxonomies"] = sorted(tags["taxonomy"].unique().tolist())
         cands = {}
         if tags is not None and len(tags) and groups:
             recent = tags[pd.to_datetime(tags["last_end"], errors="coerce")
@@ -107,6 +120,6 @@ def diagnostics(live: pd.DataFrame, load_tags, excluded: set[str]) -> list[dict]
                 cands[g] = [f"{a}:{b} ({c}, {d})" for a, b, c, d in
                             zip(hit["taxonomy"], hit["tag"], hit["unit"], hit["last_end"])]
         out.append({"ticker": t, "name": r.get("name"), "sector": r.get("sector"),
-                    "missing": missing, "flags": r.get("flags"),
-                    "known_date": r.get("known_date"), "candidates": cands})
+                    "missing": missing, "flags": r.get("flags"), "age_days": age,
+                    "known_date": r.get("known_date"), "candidates": cands, **fresh})
     return out

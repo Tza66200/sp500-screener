@@ -12,8 +12,10 @@ COLUMNS = FACTORS + ["composite"]
 
 
 def ic_observations(panel: dict, adj: pd.DataFrame, horizons: list[int],
-                    end_limit: pd.Timestamp, min_names: int = 30) -> pd.DataFrame:
+                    end_limit: pd.Timestamp, min_names: int = 30,
+                    columns: list[str] | None = None) -> pd.DataFrame:
     """Une ligne par (date, horizon, facteur). Les rendements futurs ne dépassent pas end_limit."""
+    cols = columns or COLUMNS
     cal = adj.index
     rows = []
     for d in sorted(panel):
@@ -29,7 +31,9 @@ def ic_observations(panel: dict, adj: pd.DataFrame, horizons: list[int],
             p1 = cal.searchsorted(fwd, side="right") - 1
             tick = [t for t in df.index if t in adj.columns]
             ret = adj.iloc[p1][tick] / adj.iloc[p0][tick] - 1
-            for f in COLUMNS:
+            for f in cols:
+                if f not in df:
+                    continue
                 s = df.loc[tick, f]
                 ok = s.notna() & ret.notna()
                 if ok.sum() < min_names:
@@ -71,3 +75,65 @@ def decay(obs: pd.DataFrame) -> list[dict]:
     t = obs.groupby(["factor", "horizon"])["ic"].mean().unstack("horizon")
     return [{"factor": f, **{str(int(h)): (None if pd.isna(v) else float(v))
                              for h, v in row.items()}} for f, row in t.iterrows()]
+
+
+def success_rates(panel: dict, adj: pd.DataFrame, weights: dict, min_factors: int,
+                  horizons: list[int], end_limit: pd.Timestamp, top_n: int = 20) -> list[dict]:
+    """Taux de réussite du classement, cible « battre l'équipondéré de l'univers ».
+
+    À chaque fin de mois : univers = titres éligibles classés par le modèle ; rendement futur
+    de chacun (dividendes compris) ; moyenne équipondérée de l'univers. On compare :
+    - le taux de base : part des titres de l'univers qui battent cette moyenne ;
+    - le taux du top N : part des N premiers qui la battent ;
+    - l'écart moyen du top N et de chaque quintile à cette moyenne.
+    Classement brut, sans plafond sectoriel ni bande de tolérance."""
+    from .scoring import composite
+
+    cal = adj.index
+    rows = []
+    for d in sorted(panel):
+        df = panel[d]
+        comp = composite(df, weights, min_factors).where(df["eligible_base"])
+        comp = comp.dropna()
+        tick = [t for t in comp.index if t in adj.columns]
+        if len(tick) < 5 * top_n:
+            continue
+        p0 = cal.searchsorted(d, side="right") - 1
+        for h in horizons:
+            fwd = d + pd.DateOffset(months=h)
+            if fwd > end_limit:
+                continue
+            p1 = cal.searchsorted(fwd, side="right") - 1
+            ret = (adj.iloc[p1][tick] / adj.iloc[p0][tick] - 1).dropna()
+            if len(ret) < 5 * top_n:
+                continue
+            sc = comp.loc[ret.index]
+            mean = ret.mean()
+            order = sc.sort_values(ascending=False).index
+            top = ret.loc[order[:top_n]]
+            q = pd.qcut(sc.rank(method="first", ascending=False), 5, labels=False)
+            qex = [float(ret[q == k].mean() - mean) for k in range(5)]
+            rows.append({"date": d, "horizon": h, "base_rate": float((ret > mean).mean()),
+                         "top_rate": float((top > mean).mean()),
+                         "top_excess": float(top.mean() - mean),
+                         **{f"q{k + 1}": qex[k] for k in range(5)}})
+    if not rows:
+        return []
+    obs = pd.DataFrame(rows)
+    out = []
+    for h, g in obs.groupby("horizon"):
+        n = len(g)
+        spread = g["q1"] - g["q5"]
+        sd = spread.std()
+        out.append({
+            "horizon": int(h), "n_months": n,
+            "base_rate": float(g["base_rate"].mean()),
+            "top_rate": float(g["top_rate"].mean()),
+            "top_excess": float(g["top_excess"].mean()),
+            "top_beats_universe_share": float((g["top_excess"] > 0).mean()),
+            "quintiles": [float(g[f"q{k}"].mean()) for k in range(1, 6)],
+            "spread": float(spread.mean()),
+            "spread_t_overlap_adj": float(spread.mean() / sd * math.sqrt(max(n / h, 1)))
+            if sd > 0 else None,
+        })
+    return out

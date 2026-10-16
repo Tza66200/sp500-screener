@@ -19,8 +19,9 @@
   <div class="wrap masthead-inner">
     <div class="brand">
       <h1 class="wordmark">Screener S&amp;P&nbsp;500</h1>
-      <p class="tagline">Position trading sur 12 à 18 mois, modèle <span data-bind="model_version">1.0</span></p>
+      <p class="tagline">Position trading sur 12 à 18 mois, <span data-bind="model_label">modèle</span></p>
     </div>
+    <div class="model-switch" id="model-switch" role="radiogroup" aria-label="Modèle"></div>
     <div class="freshness" id="freshness" aria-live="polite">Chargement des données…</div>
     <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Changer de thème">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
@@ -60,27 +61,15 @@
     </div>
     <div class="weights" id="weights" hidden>
       <div class="weights-head">
-        <p>Simulation : le classement est recalculé dans votre navigateur avec ces poids. Le portefeuille modèle et le backtest restent sur les poids de référence.</p>
-        <button type="button" class="btn ghost" id="weights-reset">Revenir aux poids de référence</button>
+        <p>Simulation : le classement est recalculé dans votre navigateur avec ces poids. Le portefeuille modèle et le backtest restent sur les poids du modèle choisi.</p>
+        <button type="button" class="btn ghost" id="weights-reset">Revenir aux poids du modèle</button>
       </div>
       <div class="weights-grid" id="weights-grid"></div>
     </div>
     <p class="changes" id="changes"></p>
     <div class="table-wrap">
       <table class="rank-table" id="rank-table">
-        <thead><tr>
-          <th scope="col" class="num sortable" data-sort="rank">Rang</th>
-          <th scope="col" class="sortable" data-sort="ticker">Société</th>
-          <th scope="col" class="hide-sm">Secteur</th>
-          <th scope="col" class="num sortable" data-sort="score">Score</th>
-          <th scope="col" class="fac sortable" data-sort="growth" title="Croissance">Croiss.</th>
-          <th scope="col" class="fac sortable" data-sort="momentum" title="Momentum">Mom.</th>
-          <th scope="col" class="fac sortable" data-sort="quality" title="Qualité">Qual.</th>
-          <th scope="col" class="fac sortable" data-sort="value" title="Valorisation">Valo.</th>
-          <th scope="col" class="fac sortable" data-sort="risk" title="Risque (élevé = peu volatil)">Risque</th>
-          <th scope="col" class="num hide-sm sortable" data-sort="confidence" title="Part des 11 mesures disponibles">Données</th>
-          <th scope="col" class="hide-md">Résultats</th>
-        </tr></thead>
+        <thead><tr id="rank-head"></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -91,7 +80,7 @@
   <section class="panel wrap" role="tabpanel" id="panel-portefeuille" aria-labelledby="tab-portefeuille" hidden>
     <div class="cols">
       <div class="col-main">
-        <h3>Lignes détenues</h3>
+        <h3 id="holdings-title">Lignes détenues</h3>
         <div class="table-wrap"><table class="data-table" id="holdings-table"></table></div>
         <h3>Si la revue avait lieu aujourd'hui</h3>
         <div id="hypo"></div>
@@ -110,18 +99,20 @@
   <!-- Backtest -->
   <section class="panel wrap" role="tabpanel" id="panel-backtest" aria-labelledby="tab-backtest" hidden>
     <div class="notice" id="holdout-notice"></div>
-    <h3>Critères fixés avant les tests</h3>
+    <h3 id="criteria-title">Critères fixés avant les tests</h3>
     <ul class="criteria" id="criteria"></ul>
+    <h3>Le classement repère-t-il les titres qui battent l'indice ?</h3>
+    <div id="success"></div>
     <div class="chart-head">
       <h3>Valeur de 1 $ investi</h3>
       <div class="series-toggles" id="variant-toggles"></div>
     </div>
     <figure class="chart" id="equity-chart"></figure>
-    <h3>Baisse depuis le plus haut (référence)</h3>
+    <h3 id="dd-title">Baisse depuis le plus haut</h3>
     <figure class="chart small" id="dd-chart"></figure>
-    <h3>Résultats sur la période de conception</h3>
+    <h3 id="metrics-title">Résultats sur la période de conception</h3>
     <div class="table-wrap"><table class="data-table" id="metrics-table"></table></div>
-    <h3>Référence par sous-période</h3>
+    <h3>Par sous-période</h3>
     <div class="table-wrap"><table class="data-table" id="sub-table"></table></div>
     <h3>Rendements annuels</h3>
     <div class="table-wrap"><table class="data-table" id="yearly-table"></table></div>
@@ -166,11 +157,16 @@
   <!-- Méthode -->
   <section class="panel wrap prose method" role="tabpanel" id="panel-methode" aria-labelledby="tab-methode" hidden>
     <h3>Ce que fait cet outil</h3>
-    <p>Il classe chaque soir les actions du S&amp;P&nbsp;500 selon cinq facteurs, tient un portefeuille modèle de 20 lignes revu quatre fois par an, et mesure honnêtement ce que ce modèle aurait donné depuis 2011. C'est une aide à la décision, pas un conseil en investissement ni un système d'ordres automatiques.</p>
+    <p>Il classe chaque soir les actions du S&amp;P&nbsp;500, tient un portefeuille modèle de 20 lignes revu quatre fois par an, et mesure ce que ce modèle aurait donné depuis 2011. C'est une aide à la décision, pas un conseil en investissement ni un système d'ordres automatiques. Son usage le plus sûr aujourd'hui : un premier tamis qui réduit 500 titres à une cinquantaine de candidats, à examiner ensuite soi-même.</p>
 
-    <h3>Les cinq facteurs</h3>
+    <h3>Deux modèles</h3>
+    <p><strong>V1 hybride</strong> : pondérations fixées le 16 octobre 2026 au matin, avant tout test, pour un profil hybride à risque moyen. Elle est figée.</p>
+    <p><strong>V2 littérature</strong> : enregistrée le même jour à 13 h 15, après avoir constaté que V1 ne prédisait presque rien sur 2011–2020. Elle vise davantage la hausse sur 12 à 18 mois et s'appuie sur les effets les mieux documentés : momentum, rentabilité brute, surprise de résultats et réaction du cours aux publications. La croissance passée du chiffre d'affaires est abandonnée : la recherche montre qu'elle prédit plutôt des rendements plus faibles. Ses pondérations viennent de la littérature et non d'une optimisation ; mais comme elle a été conçue en connaissant les résultats de 2011–2020, ses chiffres sur cette période ne la valident pas. Les deux modèles seront jugés ensemble sur la période réservée, puis en conditions réelles.</p>
+
+    <h3>Les facteurs</h3>
     <div class="table-wrap"><table class="data-table" id="method-metrics"></table></div>
-    <p>Chaque mesure est convertie en rang de 0 à 100 à chaque date : au sein du secteur pour les fondamentaux, sur tout l'univers pour le momentum et la volatilité. Un facteur n'est calculé que si au moins la moitié de ses mesures sont disponibles, et le score global exige au moins quatre facteurs sur cinq. Les données manquantes ne sont jamais remplacées.</p>
+    <p>Chaque mesure est convertie en rang de 0 à 100 à chaque date : au sein du secteur pour les fondamentaux, sur tout l'univers pour le momentum, la volatilité, la surprise et la réaction aux résultats. Un facteur n'est calculé que si au moins la moitié de ses mesures sont disponibles, et le score global exige au moins quatre des facteurs utilisés par le modèle. Les données manquantes ne sont jamais remplacées.</p>
+    <p>La surprise de résultats compare le résultat net du dernier trimestre à celui du même trimestre un an plus tôt, divisé par l'écart-type des huit variations précédentes (Bernard et Thomas). La réaction aux résultats est le rendement du titre de la veille au lendemain du communiqué (formulaire 8-K, item 2.02), moins celui du S&amp;P 500 équipondéré ; elle n'est retenue que pour un communiqué de moins de 100 jours. Faute d'estimations d'analystes gratuites, ces deux mesures sont des substituts.</p>
     <p>La valorisation utilise des rendements (EBIT sur valeur d'entreprise, free cash-flow sur capitalisation) plutôt que des multiples : un multiple calculé sur un bénéfice négatif devient inclassable. La moyenne mobile à 200 jours ne fait pas partie du score ; elle est testée comme variante.</p>
 
     <h3>Filtres</h3>
@@ -183,7 +179,7 @@
     </ul>
 
     <h3>Données datées à leur publication</h3>
-    <p>Les fondamentaux viennent des dépôts XBRL de la SEC. Pour chaque période, seule la première valeur publiée est conservée, et elle ne devient utilisable qu'à la séance qui suit son dépôt. Les trimestres manquants sont reconstitués à partir des cumuls (le quatrième trimestre est l'année moins les neuf premiers mois), puis additionnés sur 12 mois glissants. Le nombre d'actions est celui connu à la date, corrigé des fractionnements ultérieurs.</p>
+    <p>Les fondamentaux viennent des dépôts XBRL de la SEC. À chaque date, le modèle n'utilise que ce qui était publié ce jour-là, dans la dernière version connue : quand une société republie ses comptes (cession d'une activité, changement de norme), la nouvelle version n'est prise en compte qu'à partir de sa date de publication, et les comparaisons d'une année sur l'autre restent sur une base homogène. Une donnée devient utilisable à la séance qui suit son dépôt. Les trimestres manquants sont reconstitués à partir des cumuls ; un trimestre reconstitué incohérent (chiffre d'affaires négatif, par exemple) est écarté. Le nombre d'actions est celui connu à la date, corrigé des fractionnements ultérieurs.</p>
 
     <h3>Portefeuille</h3>
     <p>20 lignes à poids égaux, cinq au maximum par secteur. Revue mi-mars, mi-mai, mi-août et mi-novembre, une fois les rapports des grandes sociétés déposés. Un titre entre quand il atteint le top 20 et reste tant qu'il ne sort pas du top 50. Les ordres sont simulés à la clôture de la séance qui suit la revue, avec 0,10&nbsp;% de frais par transaction.</p>
@@ -195,7 +191,8 @@
     <ul>
       <li>Yahoo Finance ne fournit généralement pas les cours des sociétés retirées de la cote. Elles sont absentes du backtest, ce qui l'embellit ; l'onglet Données chiffre ce biais.</li>
       <li>Le secteur des anciens membres est déduit de leur code SIC, une approximation du classement GICS.</li>
-      <li>Les estimations et révisions des analystes ne sont pas disponibles gratuitement : la croissance repose sur les chiffres publiés.</li>
+      <li>Les estimations et révisions des analystes ne sont pas disponibles gratuitement : la surprise de résultats est mesurée par rapport au même trimestre de l'année précédente.</li>
+      <li>Certaines sociétés publient leurs comptes avec leurs propres étiquettes (Ford, Paccar, Phillips 66…) : la mesure concernée reste vide, jamais estimée. Une dette introuvable est déclarée inconnue plutôt que nulle.</li>
       <li>Aucun impôt n'est pris en compte. Pour un investisseur européen, le change et la fiscalité des dividendes américains réduisent le rendement.</li>
     </ul>
   </section>

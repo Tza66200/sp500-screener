@@ -27,6 +27,8 @@ TTM_SPAN = (340, 390)
 YEAR_TOL = 25          # tolérance (jours) pour retrouver la même période un an plus tôt
 STALE_TTM_DAYS = 200   # au-delà, un chiffre 12 mois glissants est jugé périmé
 NON_ADDITIVE = {"diluted_shares"}
+NON_NEGATIVE = {"revenue", "cost_of_revenue", "capex", "dna", "interest_expense", "gross_profit"}
+RESTATE_TOL = 0.005    # écart relatif au-delà duquel une valeur est considérée republiée
 
 
 # ----------------------------------------------------------------------------
@@ -55,7 +57,7 @@ def _from_days(x: list[int]) -> pd.Series:
     return pd.to_datetime(np.array(x, dtype=np.int64) * 86400, unit="s")
 
 
-def build_quarters(f: pd.DataFrame, additive: bool = True) -> pd.DataFrame:
+def build_quarters(f: pd.DataFrame, additive: bool = True, nonneg: bool = False) -> pd.DataFrame:
     """Trimestres d'une étiquette de flux : colonnes start, end, val, avail, derived.
 
     Calcul en entiers (jours) pour la rapidité ; une ligne = un fait XBRL déjà dédoublonné.
@@ -101,6 +103,11 @@ def build_quarters(f: pd.DataFrame, additive: bool = True) -> pd.DataFrame:
                       max([fd] + [r[3] for r in inside]), True))
     if extra:
         q = _dedupe(q + extra)
+    if nonneg:
+        # Un trimestre reconstitué négatif pour une grandeur toujours positive (chiffre
+        # d'affaires, investissements…) trahit des composantes publiées sur des bases
+        # différentes (activité cédée, changement de norme) : on l'écarte.
+        q = [r for r in q if not (r[4] and r[2] < 0)]
     if not q:
         return pd.DataFrame(columns=cols)
     return pd.DataFrame({
@@ -171,13 +178,15 @@ def build_annuals(f: pd.DataFrame) -> pd.DataFrame:
 
 
 def _with_annuals(ttm: pd.DataFrame, annual: pd.DataFrame) -> pd.DataFrame:
-    """Ajoute les exercices dont la date de fin n'a pas de 12 mois glissants trimestriel ;
-    à date de fin égale, garde la version disponible la plus tôt."""
+    """Ajoute les exercices publiés. À date de fin égale, le chiffre annuel publié l'emporte
+    sur la somme de quatre trimestres : il est directement déclaré et, après une
+    republication, il est sur la nouvelle base comptable."""
     if annual is None or not len(annual):
         return ttm
-    both = pd.concat([ttm, annual[["start", "end", "val", "avail"]]], ignore_index=True)
-    both = both.sort_values(["end", "avail"], kind="mergesort")
-    return both.drop_duplicates("end", keep="first").reset_index(drop=True)
+    a = annual[["start", "end", "val", "avail"]].assign(_p=0)
+    both = pd.concat([a, ttm.assign(_p=1)], ignore_index=True)
+    both = both.sort_values(["end", "_p"], kind="mergesort")
+    return both.drop_duplicates("end", keep="first").drop(columns="_p").reset_index(drop=True)
 
 
 def build_instants(f: pd.DataFrame) -> pd.DataFrame:
@@ -245,55 +254,129 @@ def _merge(per_tag: list[tuple[int, str, pd.DataFrame]]) -> pd.DataFrame:
     return allq.drop(columns="_rank").reset_index(drop=True)
 
 
+def build_concept(sub: pd.DataFrame, concept: str, spec: dict):
+    """Séries d'un concept à partir de faits dédoublonnés (une valeur par période)."""
+    per_tag = []
+    for rank, tag in enumerate(spec["tags"]):
+        t = sub[sub["tag"] == tag]
+        if t.empty:
+            continue
+        if spec["kind"] in ("instant", "evidence"):
+            inst = build_instants(t)
+            if len(inst):
+                per_tag.append((rank, tag, inst))
+        else:
+            q = build_quarters(t, additive=concept not in NON_ADDITIVE,
+                               nonneg=concept in NON_NEGATIVE)
+            if len(q) or len(build_annuals(t)):
+                per_tag.append((rank, tag, q))
+    if not per_tag:
+        return None, None
+    # Série fusionnée : les sociétés changent parfois d'étiquette d'une année à
+    # l'autre. Pour chaque date de fin, l'étiquette prioritaire l'emporte.
+    merged = _merge(per_tag)
+    base = [(MERGED, Series(merged))] + [(tg, Series(x)) for _, tg, x in per_tag]
+    ttm_lists = None
+    if spec["kind"] == "duration" and concept not in NON_ADDITIVE:
+        # Exercices complets : un chiffre annuel est aussi un 12 mois glissants.
+        # Il sert quand un rapport trimestriel manque dans les données XBRL.
+        annual = {tg: build_annuals(sub[sub["tag"] == tg]) for _, tg, _ in per_tag}
+        ann_merged = _merge([(rk, tg, annual[tg]) for rk, tg, _ in per_tag
+                             if len(annual[tg])]) if any(len(a) for a in annual.values()) \
+            else pd.DataFrame(columns=["start", "end", "val", "avail"])
+        lists = []
+        for tg, x, a in [(MERGED, merged, ann_merged)] + \
+                [(tg, x, annual[tg]) for _, tg, x in per_tag]:
+            ttm = _with_annuals(build_ttm(x), a)
+            if len(ttm):
+                lists.append((tg, Series(ttm)))
+        ttm_lists = lists or None
+    return base, ttm_lists
+
+
+def _keys(df: pd.DataFrame) -> pd.Series:
+    start = df["start"].dt.strftime("%Y%m%d").fillna("-") if "start" in df else "-"
+    return df["tag"].astype(str) + "|" + start + "|" + df["end"].dt.strftime("%Y%m%d")
+
+
+def restatements(facts: pd.DataFrame) -> list[tuple[pd.Timestamp, set]]:
+    """Dates auxquelles une valeur déjà publiée est republiée différemment, avec les
+    concepts touchés."""
+    f = facts.assign(_k=_keys(facts)).sort_values(["_k", "filed", "accn"], kind="mergesort")
+    prev = f.groupby("_k")["val"].shift(1)
+    same_key = f["_k"].eq(f["_k"].shift(1))
+    diff = (f["val"] - prev).abs() > RESTATE_TOL * prev.abs().clip(lower=1.0)
+    hit = f[same_key & diff]
+    out: dict = {}
+    for d, c in zip(hit["filed"].dt.normalize(), hit["concept"]):
+        out.setdefault(d, set()).add(c)
+    return sorted(out.items())
+
+
+def as_of(facts: pd.DataFrame, r: pd.Timestamp) -> pd.DataFrame:
+    """Pour chaque période : dernière valeur publiée au plus tard le jour r ; à défaut
+    (période publiée après r), la première valeur publiée."""
+    f = facts.assign(_k=_keys(facts)).sort_values(["filed", "accn"], kind="mergesort")
+    known = f[f["filed"] <= r].drop_duplicates("_k", keep="last")
+    later = f[~f["_k"].isin(known["_k"])].drop_duplicates("_k", keep="first")
+    return pd.concat([known, later], ignore_index=True).drop(columns="_k")
+
+
 class Company:
+    """Fondamentaux d'une société, tels que connus à chaque date.
+
+    Version 0 : première valeur publiée de chaque période. À chaque date où une valeur est
+    republiée (cession d'activité, changement de norme…), les concepts touchés sont
+    reconstruits avec la dernière version connue à cette date. Un état à la date d utilise
+    la dernière version antérieure ou égale à d : aucune information future n'est utilisée,
+    et les comparaisons d'une année sur l'autre restent sur une base homogène.
+    """
+
     def __init__(self, facts: pd.DataFrame, concepts: dict):
         self.concepts = concepts
-        self.ttm: dict[str, list[tuple[str, Series]]] = {}
-        self.quarters: dict[str, list[tuple[str, Series]]] = {}
-        self.instants: dict[str, list[tuple[str, Series]]] = {}
-        facts = facts.copy()
+        self.ttm: dict = {}
+        self.quarters: dict = {}
+        self.instants: dict = {}
+        self.versions: list = []
         if facts.empty:
             self.event_dates = []
             return
+        facts = facts.copy()
+        facts["filed"] = pd.to_datetime(facts["filed"]).dt.normalize()
         ff = first_filed(facts)
+        ttm, quarters, instants = {}, {}, {}
         for concept, spec in concepts.items():
-            sub = ff[ff["concept"] == concept]
-            per_tag = []
-            for rank, tag in enumerate(spec["tags"]):
-                t = sub[sub["tag"] == tag]
-                if t.empty:
+            self._build_into(ff[ff["concept"] == concept], concept, spec, ttm, quarters, instants)
+        self.versions.append((np.datetime64("1900-01-01", "D"), ttm, quarters, instants))
+        for r, touched in restatements(facts):
+            ttm, quarters, instants = dict(ttm), dict(quarters), dict(instants)
+            for concept in touched:
+                if concept not in concepts:
                     continue
-                if spec["kind"] in ("instant", "evidence"):
-                    inst = build_instants(t)
-                    if len(inst):
-                        per_tag.append((rank, tag, inst))
-                else:
-                    q = build_quarters(t, additive=concept not in NON_ADDITIVE)
-                    if len(q) or len(build_annuals(t)):
-                        per_tag.append((rank, tag, q))
-            if not per_tag:
-                continue
-            # Série fusionnée : les sociétés changent parfois d'étiquette d'une année à
-            # l'autre. Pour chaque date de fin, l'étiquette prioritaire l'emporte.
-            merged = _merge(per_tag)
-            target = self.instants if spec["kind"] in ("instant", "evidence") else self.quarters
-            target[concept] = [(MERGED, Series(merged))] + [(tg, Series(x)) for _, tg, x in per_tag]
-            if spec["kind"] == "duration" and concept not in NON_ADDITIVE:
-                # Exercices complets : un chiffre annuel est aussi un 12 mois glissants.
-                # Il sert quand un rapport trimestriel manque dans les données XBRL.
-                annual = {tg: build_annuals(sub[sub["tag"] == tg]) for _, tg, _ in per_tag}
-                ann_merged = _merge([(rk, tg, annual[tg]) for rk, tg, _ in per_tag
-                                     if len(annual[tg])]) if any(len(a) for a in annual.values()) \
-                    else pd.DataFrame(columns=["start", "end", "val", "avail"])
-                lists = []
-                for tg, x, a in [(MERGED, merged, ann_merged)] + \
-                        [(tg, x, annual[tg]) for _, tg, x in per_tag]:
-                    ttm = _with_annuals(build_ttm(x), a)
-                    if len(ttm):
-                        lists.append((tg, Series(ttm)))
-                if lists:
-                    self.ttm[concept] = lists
-        self.event_dates = sorted(pd.to_datetime(ff["filed"]).dt.normalize().unique())
+                for d in (ttm, quarters, instants):
+                    d.pop(concept, None)
+                sub = as_of(facts[facts["concept"] == concept], r)
+                self._build_into(sub, concept, concepts[concept], ttm, quarters, instants)
+            self.versions.append((np.datetime64(r.date(), "D"), ttm, quarters, instants))
+        self.version_dates = [v[0] for v in self.versions]
+        self.event_dates = sorted(facts["filed"].unique())
+        self._use(np.datetime64("2200-01-01", "D"))
+
+    @staticmethod
+    def _build_into(sub, concept, spec, ttm, quarters, instants):
+        base, ttm_lists = build_concept(sub, concept, spec)
+        if base is None:
+            return
+        if spec["kind"] in ("instant", "evidence"):
+            instants[concept] = base
+        else:
+            quarters[concept] = base
+        if ttm_lists:
+            ttm[concept] = ttm_lists
+
+    def _use(self, d: np.datetime64) -> None:
+        i = bisect_left(self.version_dates, d + np.timedelta64(1, "D")) - 1
+        _, self.ttm, self.quarters, self.instants = self.versions[max(i, 0)]
 
     # -- sélection d'étiquettes -------------------------------------------------
     @staticmethod
@@ -387,6 +470,7 @@ class Company:
 
     # -- état à une date --------------------------------------------------------
     def state(self, d: np.datetime64) -> dict:
+        self._use(d)
         out: dict = {"known_date": pd.Timestamp(d)}
         flags: list[str] = []
 
@@ -449,10 +533,25 @@ class Company:
         gp = self.ttm_now("gross_profit", d)
         if gp:
             out["gross_profit_ttm"] = gp[1].val[gp[2]]
+            out["gross_profit_ttm_prev"], _ = self.ttm_year_ago(
+                "gross_profit", gp[0], gp[1].end[gp[2]], d)
         elif rev:
             cor = self.ttm_now("cost_of_revenue", d)
             if cor and cor[1].end[cor[2]] == rev[1].end[rev[2]]:
                 out["gross_profit_ttm"] = out["revenue_ttm"] - cor[1].val[cor[2]]
+                cor_prev, _ = self.ttm_year_ago("cost_of_revenue", cor[0], cor[1].end[cor[2]], d)
+                if out.get("revenue_ttm_prev") is not None and cor_prev is not None:
+                    out["gross_profit_ttm_prev"] = out["revenue_ttm_prev"] - cor_prev
+
+        # Actifs un an plus tôt (variation de la rentabilité)
+        if bs_end is not None:
+            v, _ = self.instant_at("assets", bs_end - np.timedelta64(365, "D"), d, tol=YEAR_TOL)
+            out["assets_prev"] = v
+
+        # Surprise de résultats standardisée (Bernard et Thomas) sur le résultat net
+        # trimestriel : variation sur un an du dernier trimestre, divisée par l'écart-type
+        # des 8 variations précédentes.
+        out["sue"], out["sue_quarter"] = self.sue(d)
 
         for concept, key in (("net_income", "ni_ttm"), ("cfo", "cfo_ttm"),
                              ("capex", "capex_ttm"), ("dna", "dna_ttm")):
@@ -519,6 +618,41 @@ class Company:
         out["flags"] = " | ".join(flags)
         return out
 
+    def sue(self, d: np.datetime64):
+        lst = self.quarters.get("net_income")
+        if not lst:
+            return None, None
+        s = lst[0][1]
+        ok = np.nonzero(s.avail <= d)[0]
+        if not len(ok):
+            return None, None
+        ends = s.end[ok]
+        vals = s.val[ok]
+        order = np.argsort(ends)
+        ends, vals = ends[order], vals[order]
+        if (d - ends[-1]).astype(int) > STALE_TTM_DAYS:
+            return None, None
+        changes = []
+        for k in range(len(ends) - 1, -1, -1):
+            target = ends[k] - np.timedelta64(365, "D")
+            gap = np.abs((ends - target).astype(int))
+            j = int(np.argmin(gap))
+            if gap[j] <= YEAR_TOL and j != k:
+                changes.append(vals[k] - vals[j])
+            else:
+                changes.append(None)
+            if len(changes) >= 9:
+                break
+        if not changes or changes[0] is None:
+            return None, None
+        hist = [c for c in changes[1:] if c is not None]
+        if len(hist) < 4:
+            return None, None
+        sd = float(np.std(hist, ddof=1))
+        if sd <= 0:
+            return None, None
+        return float(changes[0] / sd), pd.Timestamp(ends[-1])
+
     def states(self) -> list[dict]:
         out = []
         for d in self.event_dates:
@@ -528,8 +662,9 @@ class Company:
 
 STATE_COLUMNS = ["known_date", "quarter_end", "bs_end", "revenue_ttm", "revenue_ttm_prev",
                  "revenue_q_yoy", "revenue_q_yoy_prev", "revenue_tag", "oi_ttm", "oi_ttm_prev",
-                 "gross_profit_ttm", "ni_ttm", "cfo_ttm", "capex_ttm", "dna_ttm", "assets",
-                 "cash", "debt", "shares", "shares_date", "flags"]
+                 "gross_profit_ttm", "gross_profit_ttm_prev", "ni_ttm", "cfo_ttm", "capex_ttm",
+                 "dna_ttm", "assets", "assets_prev", "cash", "debt", "shares", "shares_date",
+                 "sue", "sue_quarter", "flags"]
 
 
 def company_states(facts: pd.DataFrame, concepts: dict) -> pd.DataFrame:
@@ -540,10 +675,11 @@ def company_states(facts: pd.DataFrame, concepts: dict) -> pd.DataFrame:
         if c not in df.columns:
             df[c] = None
     df = df[STATE_COLUMNS]
-    for c in ("known_date", "quarter_end", "bs_end", "shares_date"):
+    for c in ("known_date", "quarter_end", "bs_end", "shares_date", "sue_quarter"):
         df[c] = pd.to_datetime(df[c])
     for c in STATE_COLUMNS:
-        if c not in ("known_date", "quarter_end", "bs_end", "shares_date", "revenue_tag", "flags"):
+        if c not in ("known_date", "quarter_end", "bs_end", "shares_date", "sue_quarter",
+                     "revenue_tag", "flags"):
             df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
 

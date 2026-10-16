@@ -6,7 +6,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from .config import FACTORS
+from .config import FACTORS, model_weights
 from .features import METRICS
 
 FACTOR_METRICS = {f: [m for m, spec in METRICS.items() if spec[0] == f] for f in FACTORS}
@@ -17,7 +17,7 @@ REASONS = {
     "sec": "Données SEC introuvables",
     "duplicate": "Autre catégorie d'actions de la même société",
     "stale": "Fondamentaux de plus de 6 mois",
-    "insufficient": "Données insuffisantes (moins de 4 facteurs)",
+    "insufficient": "Données insuffisantes pour ce modèle (moins de 4 facteurs)",
     "liquidity": "Liquidité insuffisante",
     "trend": "Cours sous la moyenne mobile 200 jours",
     "merger": "Offre de rachat en cours",
@@ -73,8 +73,9 @@ def base_exclusions(f: pd.DataFrame, settings: dict) -> pd.Series:
     return reasons
 
 
-def score(f: pd.DataFrame, weights: dict, settings: dict) -> pd.DataFrame:
-    """Calcule percentiles et scores sur l'univers classable (avant filtres)."""
+def score(f: pd.DataFrame, settings: dict) -> pd.DataFrame:
+    """Percentiles, scores par facteur et score global de chaque modèle, sur l'univers
+    classable (avant filtres)."""
     f = f.copy()
     sc = settings["scoring"]
     f["reasons"] = base_exclusions(f, settings)
@@ -90,22 +91,27 @@ def score(f: pd.DataFrame, weights: dict, settings: dict) -> pd.DataFrame:
         f[fac] = pcts.mean(axis=1).where(pcts.notna().sum(axis=1) >= need)
     f["n_metrics"] = f[[f"pct_{m}" for m in METRICS]].notna().sum(axis=1)
     f["data_confidence"] = (f["n_metrics"] / len(METRICS) * 100).round(0)
-    f["composite"] = composite(f, weights, sc["min_factors"])
+    for model in settings["models"]:
+        f[f"composite_{model}"] = composite(f, model_weights(settings, model), sc["min_factors"])
+    f["composite"] = f[f"composite_{settings['default_model']}"]
     return f
 
 
 def composite(f: pd.DataFrame, weights: dict, min_factors: int) -> pd.Series:
-    w = pd.Series(weights, dtype=float)
-    scores = f[FACTORS]
+    """Moyenne pondérée des facteurs disponibles parmi ceux que le modèle utilise
+    (poids > 0) ; au moins `min_factors` d'entre eux sont exigés."""
+    w = pd.Series(weights, dtype=float).reindex(FACTORS).fillna(0.0)
+    active = [c for c in FACTORS if w[c] > 0]
+    scores = f[active]
     avail = scores.notna()
-    wsum = (avail * w).sum(axis=1)
-    total = (scores.fillna(0) * w).sum(axis=1) / wsum.where(wsum > 0)
-    return total.where(avail.sum(axis=1) >= min_factors)
+    wsum = (avail * w[active]).sum(axis=1)
+    total = (scores.fillna(0) * w[active]).sum(axis=1) / wsum.where(wsum > 0)
+    return total.where(avail.sum(axis=1) >= min(min_factors, len(active)))
 
 
 def apply_filters(f: pd.DataFrame, settings: dict, *, trend_filter: bool = False,
                   merger: dict | None = None, vetoes: dict | None = None) -> pd.DataFrame:
-    """Ajoute les filtres éliminatoires, l'éligibilité et le rang parmi les éligibles."""
+    """Filtres éliminatoires communs aux modèles, puis éligibilité et rang par modèle."""
     f = f.copy()
     u = settings["universe"]
     reasons = f["reasons"].map(list)
@@ -115,8 +121,6 @@ def apply_filters(f: pd.DataFrame, settings: dict, *, trend_filter: bool = False
             continue
         if f.at[t, "fundamentals_age_days"] > u["max_fundamentals_age_days"]:
             r.append("stale")
-        if pd.isna(f.at[t, "composite"]):
-            r.append("insufficient")
         if not (f.at[t, "dollar_vol_63"] >= u["min_dollar_volume_usd"]):
             r.append("liquidity")
         if trend_filter and not (f.at[t, "above_sma200"] == 1):
@@ -125,9 +129,20 @@ def apply_filters(f: pd.DataFrame, settings: dict, *, trend_filter: bool = False
             r.append("merger")
         if vetoes and t in vetoes:
             r.append("veto")
-    f["reasons"] = reasons
-    f["eligible"] = reasons.map(len) == 0
-    f["rank"] = f["composite"].where(f["eligible"]).rank(ascending=False, method="first")
+    f["reasons_common"] = reasons
+    f["eligible_base"] = reasons.map(len) == 0
+    for model in settings["models"]:
+        comp = f[f"composite_{model}"]
+        insufficient = f["eligible_base"] & comp.isna()
+        f[f"reasons_{model}"] = [r + ["insufficient"] if ins else list(r)
+                                 for r, ins in zip(reasons, insufficient)]
+        f[f"eligible_{model}"] = f["eligible_base"] & comp.notna()
+        f[f"rank_{model}"] = comp.where(f[f"eligible_{model}"]).rank(ascending=False,
+                                                                      method="first")
+    dm = settings["default_model"]
+    f["reasons"] = f[f"reasons_{dm}"]
+    f["eligible"] = f[f"eligible_{dm}"]
+    f["rank"] = f[f"rank_{dm}"]
     return f
 
 

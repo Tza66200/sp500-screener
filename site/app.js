@@ -1,8 +1,7 @@
 // Screener S&P 500 — application cliente (aucune dépendance, aucune donnée envoyée).
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const FACTORS = ["growth", "momentum", "quality", "value", "risk"];
-const state = { data: {}, sort: { key: "rank", dir: 1 }, weights: null, refWeights: null };
+const state = { data: {}, model: null, sort: { key: "rank", dir: 1 }, weights: null, factors: [] };
 
 // ---------------------------------------------------------------- formats
 const nf = (d) => new Intl.NumberFormat("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -30,11 +29,20 @@ const dateFr = (s, long = false) => {
 };
 const daysUntil = (s) => Math.round((parseDate(s) - new Date()) / 864e5);
 const tone = (v) => (isNum(v) ? (v > 0 ? "pos" : v < 0 ? "neg" : "") : "");
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* stockage indisponible */ } },
+};
+
+// Accès aux données du modèle sélectionné
+const M = () => state.model;
+const mrow = (r) => r.models[M()];
+const mlabel = (m = M()) => state.data.meta.models[m].label;
+const activeFactors = (m = M()) => state.data.meta.factors.filter((f) => state.data.meta.models[m].weights[f] > 0);
 
 // ---------------------------------------------------------------- thème
 function initTheme() {
-  let saved = null;
-  try { saved = localStorage.getItem("theme"); } catch (e) { /* stockage indisponible */ }
+  const saved = store.get("theme");
   if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
   $("#theme-toggle").addEventListener("click", () => {
     const dark = document.documentElement.dataset.theme
@@ -42,7 +50,7 @@ function initTheme() {
       : matchMedia("(prefers-color-scheme: dark)").matches;
     const next = dark ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    try { localStorage.setItem("theme", next); } catch (e) { /* ignore */ }
+    store.set("theme", next);
     redrawCharts();
   });
 }
@@ -85,12 +93,43 @@ async function load() {
   const names = ["ranking", "portfolio", "backtest", "factors", "audit", "changes"];
   const res = await Promise.all(names.map((n) => fetch(`data/${n}.json?v=${v}`).then((r) => (r.ok ? r.json() : null))));
   state.data = { meta, ...Object.fromEntries(names.map((n, i) => [n, res[i]])) };
+  if (!meta.models) throw new Error("format");
+}
+
+// ---------------------------------------------------------------- modèle
+function initModel() {
+  const meta = state.data.meta;
+  const saved = store.get("model");
+  state.model = meta.models[saved] ? saved : meta.default_model;
+  const order = [meta.default_model, ...Object.keys(meta.models).filter((m) => m !== meta.default_model)];
+  const box = $("#model-switch");
+  box.innerHTML = order.map((m) => `<button type="button" role="radio" data-m="${esc(m)}">${esc(meta.models[m].label)}</button>`).join("");
+  box.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-m]");
+    if (!b || b.dataset.m === state.model) return;
+    state.model = b.dataset.m;
+    store.set("model", state.model);
+    applyModel();
+  });
+}
+
+function applyModel() {
+  $$("#model-switch [data-m]").forEach((b) => b.setAttribute("aria-checked", b.dataset.m === M()));
+  $('[data-bind="model_label"]').textContent = mlabel();
+  state.factors = activeFactors();
+  loadWeights();
+  renderBoard();
+  buildRankingHead();
+  buildWeights();
+  renderChanges();
+  renderRanking();
+  renderPortfolio();
+  renderBacktest();
 }
 
 // ---------------------------------------------------------------- en-tête
 function renderHeader() {
   const m = state.data.meta;
-  $('[data-bind="model_version"]').textContent = m.model_version;
   const gen = new Date(m.generated_at);
   const genTxt = gen.toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   let html = `Cours au ${esc(dateFr(m.price_last_date))}<br>Actualisé le ${esc(genTxt)}`;
@@ -101,15 +140,18 @@ function renderHeader() {
 }
 
 // ---------------------------------------------------------------- tableau du portefeuille
+function portfolioOf() { return state.data.portfolio?.models?.[M()]; }
+
 function renderBoard() {
-  const p = state.data.portfolio;
+  const p = portfolioOf();
   const board = $("#board");
   if (!p || !p.holdings.length) {
     board.innerHTML = '<div class="tile empty">Aucune position : le backtest n\'a pas encore produit de portefeuille.</div>';
+    $("#next-review").innerHTML = "";
     return;
   }
   const lr = p.last_review;
-  $("#board-note").textContent = lr ? `20 lignes à poids égaux, issues de la revue du ${dateFr(lr.review_date, true)}. Cliquez sur un titre pour sa fiche.` : "";
+  $("#board-note").textContent = lr ? `${mlabel()} : 20 lignes à poids égaux, issues de la revue du ${dateFr(lr.review_date, true)}. Cliquez sur un titre pour sa fiche.` : "";
   board.innerHTML = p.holdings.map((h, i) => {
     const sell = h.action === "vendre";
     return `<button class="tile${sell ? " sell" : ""}" role="listitem" data-ticker="${esc(h.ticker)}" style="--i:${i}"
@@ -121,7 +163,7 @@ function renderBoard() {
   }).join("");
   board.onclick = (e) => { const t = e.target.closest("[data-ticker]"); if (t) openDrawer(t.dataset.ticker); };
 
-  const n = p.next_review, d = daysUntil(n);
+  const n = state.data.portfolio.next_review, d = daysUntil(n);
   const sells = p.holdings.filter((h) => h.action === "vendre").length;
   const buys = p.hypothetical_buys.length;
   $("#next-review").innerHTML = `<span>Prochaine revue : <strong>${esc(dateFr(n, true))}</strong> (dans ${d} jour${d > 1 ? "s" : ""})</span>
@@ -130,17 +172,56 @@ function renderBoard() {
 }
 
 // ---------------------------------------------------------------- classement
+const FAC_SHORT = { growth: "Croiss.", earnings: "Résult.", momentum: "Mom.", quality: "Qual.", value: "Valo.", risk: "Risque" };
+
+function buildRankingHead() {
+  const L = state.data.meta.factor_labels;
+  $("#rank-head").innerHTML = `
+    <th scope="col" class="num sortable" data-sort="rank">Rang</th>
+    <th scope="col" class="sortable" data-sort="ticker">Société</th>
+    <th scope="col" class="hide-sm">Secteur</th>
+    <th scope="col" class="num sortable" data-sort="score">Score</th>
+    ${state.factors.map((f) => `<th scope="col" class="fac sortable" data-sort="${f}" title="${esc(L[f])}${f === "risk" ? " (élevé = peu volatil)" : ""}">${esc(FAC_SHORT[f] || L[f])}</th>`).join("")}
+    <th scope="col" class="num hide-sm sortable" data-sort="confidence" title="Part des mesures disponibles">Données</th>
+    <th scope="col" class="hide-md">Résultats</th>`;
+  $$("#rank-head th.sortable").forEach((th) => th.addEventListener("click", () => {
+    const k = th.dataset.sort;
+    state.sort = state.sort.key === k ? { key: k, dir: -state.sort.dir } : { key: k, dir: k === "rank" || k === "ticker" ? 1 : -1 };
+    renderRanking();
+  }));
+}
+
+function loadWeights() {
+  const base = state.data.meta.models[M()].weights;
+  let saved = null;
+  try { saved = JSON.parse(store.get("weights_" + M()) || "null"); } catch (e) { saved = null; }
+  state.weights = saved && state.data.meta.factors.every((f) => isNum(saved[f])) ? saved : { ...base };
+}
+
+function isCustom() {
+  const base = state.data.meta.models[M()].weights;
+  return state.data.meta.factors.some((f) => Math.abs((state.weights[f] || 0) - base[f]) > 1e-9);
+}
+
 function scoreRows() {
   const rows = state.data.ranking.rows;
   const w = state.weights, minF = state.data.meta.scoring.min_factors;
-  const custom = FACTORS.some((f) => Math.abs(w[f] - state.refWeights[f]) > 1e-9);
+  const custom = isCustom();
+  const used = state.data.meta.factors.filter((f) => w[f] > 0);
   rows.forEach((r) => {
-    if (!custom) { r._score = r.score; return; }
+    const mr = mrow(r);
+    if (!custom) { r._score = mr.score; return; }
     let s = 0, ws = 0, n = 0;
-    FACTORS.forEach((f) => { const v = r.factors[f]; if (isNum(v)) { s += v * w[f]; ws += w[f]; n++; } });
-    r._score = n >= minF && ws > 0 ? s / ws : null;
+    used.forEach((f) => { const v = r.factors[f]; if (isNum(v)) { s += v * w[f]; ws += w[f]; n++; } });
+    r._score = n >= Math.min(minF, used.length) && ws > 0 ? s / ws : null;
   });
-  const elig = rows.filter((r) => r.eligible && isNum(r._score)).sort((a, b) => b._score - a._score);
+  // éligibilité : filtres communs (sans le critère « données insuffisantes »)
+  rows.forEach((r) => {
+    const mr = mrow(r);
+    const common = !(mr.reasons || []).some((x) => !x.startsWith("Données insuffisantes"));
+    r._eligible = custom ? common && isNum(r._score) : mr.eligible;
+  });
+  const elig = rows.filter((r) => r._eligible && isNum(r._score)).sort((a, b) => b._score - a._score);
   rows.forEach((r) => { r._rank = null; });
   elig.forEach((r, i) => { r._rank = i + 1; });
   return custom;
@@ -157,93 +238,94 @@ function renderRanking() {
   const sector = $("#sector").value;
   const only = $("#only-eligible").checked;
   let rows = state.data.ranking.rows.filter((r) =>
-    (!only || r.eligible) && (!sector || r.sector === sector) &&
+    (!only || r._eligible) && (!sector || r.sector === sector) &&
     (!q || r.ticker.toLowerCase().includes(q) || (r.name || "").toLowerCase().includes(q)));
   const { key, dir } = state.sort;
   const val = (r) => key === "rank" ? (r._rank ?? 1e9) : key === "score" ? r._score : key === "ticker" ? r.ticker
     : key === "confidence" ? r.confidence : r.factors[key];
   rows = rows.slice().sort((a, b) => {
-    if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+    if (a._eligible !== b._eligible) return a._eligible ? -1 : 1;
     const va = val(a), vb = val(b);
     if (va == null && vb == null) return 0; if (va == null) return 1; if (vb == null) return -1;
     return (va < vb ? -1 : va > vb ? 1 : 0) * dir;
   });
-  $$("#rank-table th.sortable").forEach((th) => {
+  $$("#rank-head th.sortable").forEach((th) => {
     th.setAttribute("aria-sort", th.dataset.sort === key ? (dir === 1 ? "ascending" : "descending") : "none");
   });
   let cutDone = false;
+  const ncol = 6 + state.factors.length;
   $("#rank-table tbody").innerHTML = rows.map((r) => {
-    let cls = r.eligible ? "" : "inel";
-    if (!r.eligible && !cutDone && !only) { cls += " cut"; cutDone = true; }
+    const mr = mrow(r);
+    let cls = r._eligible ? "" : "inel";
+    if (!r._eligible && !cutDone && !only) { cls += " cut"; cutDone = true; }
     const res = r.next_earnings_est ? `vers le ${dateFr(r.next_earnings_est)}` : "—";
     return `<tr class="${cls}" data-ticker="${esc(r.ticker)}" tabindex="0">
       <td class="num rk">${r._rank ?? "—"}</td>
-      <td><div class="co"><span class="tk">${esc(r.ticker)}</span>${r.in_portfolio ? '<span class="held" title="Dans le portefeuille modèle"></span>' : ""}<span class="nm">${esc(r.name)}</span></div>
-        ${r.eligible ? "" : `<div class="reasons">${esc((r.reasons || []).join(" ; "))}</div>`}</td>
+      <td><div class="co"><span class="tk">${esc(r.ticker)}</span>${mr.in_portfolio ? '<span class="held" title="Dans le portefeuille modèle"></span>' : ""}<span class="nm">${esc(r.name)}</span></div>
+        ${r._eligible ? "" : `<div class="reasons">${esc((mr.reasons || []).join(" ; "))}</div>`}</td>
       <td class="hide-sm">${esc(r.sector)}</td>
       <td class="num score">${isNum(r._score) ? NF1.format(r._score) : "—"}</td>
-      ${FACTORS.map((f) => `<td class="fac">${meter(r.factors[f])}</td>`).join("")}
+      ${state.factors.map((f) => `<td class="fac">${meter(r.factors[f])}</td>`).join("")}
       <td class="num hide-sm">${isNum(r.confidence) ? Math.round(r.confidence) + " %" : "—"}</td>
       <td class="hide-md">${res}</td></tr>`;
-  }).join("") || '<tr><td colspan="11" class="empty-state">Aucun titre ne correspond à ces filtres.</td></tr>';
-  const nEl = state.data.ranking.rows.filter((r) => r.eligible).length;
-  $("#rank-foot").textContent = `${nEl} titres éligibles sur ${state.data.ranking.rows.length} membres actuels. ` +
-    (custom ? "Classement recalculé avec vos pondérations." : "Pondérations de référence.") +
+  }).join("") || `<tr><td colspan="${ncol}" class="empty-state">Aucun titre ne correspond à ces filtres.</td></tr>`;
+  const nEl = state.data.ranking.rows.filter((r) => r._eligible).length;
+  $("#rank-foot").textContent = `${mlabel()} : ${nEl} titres éligibles sur ${state.data.ranking.rows.length} membres actuels. ` +
+    (custom ? "Classement recalculé avec vos pondérations." : "Pondérations du modèle.") +
     " Le point indique les titres du portefeuille modèle.";
 }
 
-function initRanking() {
-  const sectors = [...new Set(state.data.ranking.rows.map((r) => r.sector).filter(Boolean))].sort();
-  $("#sector").insertAdjacentHTML("beforeend", sectors.map((s) => `<option>${esc(s)}</option>`).join(""));
-  ["#q", "#sector", "#only-eligible"].forEach((s) => $(s).addEventListener("input", renderRanking));
-  $$("#rank-table th.sortable").forEach((th) => th.addEventListener("click", () => {
-    const k = th.dataset.sort;
-    state.sort = state.sort.key === k ? { key: k, dir: -state.sort.dir } : { key: k, dir: k === "rank" || k === "ticker" ? 1 : -1 };
-    renderRanking();
-  }));
-  const tbody = $("#rank-table tbody");
-  tbody.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-ticker]"); if (tr) openDrawer(tr.dataset.ticker); });
-  tbody.addEventListener("keydown", (e) => { if (e.key === "Enter") { const tr = e.target.closest("tr[data-ticker]"); if (tr) openDrawer(tr.dataset.ticker); } });
-
-  // Pondérations
-  state.refWeights = { ...state.data.meta.weights };
-  let saved = null;
-  try { saved = JSON.parse(localStorage.getItem("weights") || "null"); } catch (e) { /* ignore */ }
-  state.weights = saved && FACTORS.every((f) => isNum(saved[f])) ? saved : { ...state.refWeights };
-  const labels = state.data.meta.factor_labels;
-  $("#weights-grid").innerHTML = FACTORS.map((f) => `<label>${esc(labels[f])}
-      <input type="range" min="0" max="50" step="5" data-f="${f}" value="${Math.round(state.weights[f] * 100)}">
+function buildWeights() {
+  const L = state.data.meta.factor_labels;
+  $("#weights-grid").innerHTML = state.data.meta.factors.map((f) => `<label>${esc(L[f])}
+      <input type="range" min="0" max="50" step="5" data-f="${f}" value="${Math.round((state.weights[f] || 0) * 100)}">
       <output data-o="${f}"></output></label>`).join("");
-  const sync = () => {
-    const raw = Object.fromEntries(FACTORS.map((f) => [f, +$(`input[data-f="${f}"]`).value]));
-    const tot = FACTORS.reduce((a, f) => a + raw[f], 0) || 1;
-    state.weights = Object.fromEntries(FACTORS.map((f) => [f, raw[f] / tot]));
-    FACTORS.forEach((f) => { $(`output[data-o="${f}"]`).textContent = `${Math.round(state.weights[f] * 100)} % du score`; });
-    try { localStorage.setItem("weights", JSON.stringify(state.weights)); } catch (e) { /* ignore */ }
-    renderRanking();
-  };
-  $$("#weights-grid input").forEach((i) => i.addEventListener("input", sync));
-  $("#weights-reset").addEventListener("click", () => {
-    FACTORS.forEach((f) => { $(`input[data-f="${f}"]`).value = Math.round(state.refWeights[f] * 100); });
-    sync();
-  });
-  $("#weights-toggle").addEventListener("click", (e) => {
-    const open = $("#weights").hidden;
-    $("#weights").hidden = !open; e.currentTarget.setAttribute("aria-expanded", open);
-  });
-  sync();
+  $$("#weights-grid input").forEach((i) => i.addEventListener("input", syncWeights));
+  syncWeights(false);
+}
 
+function syncWeights(render = true) {
+  const fs = state.data.meta.factors;
+  const raw = Object.fromEntries(fs.map((f) => [f, +$(`input[data-f="${f}"]`).value]));
+  const tot = fs.reduce((a, f) => a + raw[f], 0) || 1;
+  state.weights = Object.fromEntries(fs.map((f) => [f, raw[f] / tot]));
+  fs.forEach((f) => { $(`output[data-o="${f}"]`).textContent = `${Math.round(state.weights[f] * 100)} % du score`; });
+  store.set("weights_" + M(), JSON.stringify(state.weights));
+  state.factors = fs.filter((f) => state.weights[f] > 0);
+  if (render !== false) { buildRankingHead(); renderRanking(); }
+}
+
+function renderChanges() {
   const c = state.data.changes;
-  if (c && c.available) {
+  const cm = c?.models?.[M()];
+  if (c && c.available && cm) {
     const parts = [];
-    if (c.entered_top20.length) parts.push(`entrés dans le top 20 : ${c.entered_top20.join(", ")}`);
-    if (c.left_top20.length) parts.push(`sortis : ${c.left_top20.join(", ")}`);
+    if (cm.entered_top20.length) parts.push(`entrés dans le top 20 : ${cm.entered_top20.join(", ")}`);
+    if (cm.left_top20.length) parts.push(`sortis : ${cm.left_top20.join(", ")}`);
     $("#changes").textContent = parts.length
       ? `Depuis le ${dateFr(c.compared_to)}, ${parts.join(" ; ")}.`
       : `Aucun changement dans le top 20 depuis le ${dateFr(c.compared_to)}.`;
   } else {
     $("#changes").textContent = "Le suivi des changements commencera après une semaine d'actualisations.";
   }
+}
+
+function initRanking() {
+  const sectors = [...new Set(state.data.ranking.rows.map((r) => r.sector).filter(Boolean))].sort();
+  $("#sector").insertAdjacentHTML("beforeend", sectors.map((s) => `<option>${esc(s)}</option>`).join(""));
+  ["#q", "#sector", "#only-eligible"].forEach((s) => $(s).addEventListener("input", renderRanking));
+  const tbody = $("#rank-table tbody");
+  tbody.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-ticker]"); if (tr) openDrawer(tr.dataset.ticker); });
+  tbody.addEventListener("keydown", (e) => { if (e.key === "Enter") { const tr = e.target.closest("tr[data-ticker]"); if (tr) openDrawer(tr.dataset.ticker); } });
+  $("#weights-reset").addEventListener("click", () => {
+    const base = state.data.meta.models[M()].weights;
+    state.data.meta.factors.forEach((f) => { $(`input[data-f="${f}"]`).value = Math.round(base[f] * 100); });
+    syncWeights();
+  });
+  $("#weights-toggle").addEventListener("click", (e) => {
+    const open = $("#weights").hidden;
+    $("#weights").hidden = !open; e.currentTarget.setAttribute("aria-expanded", open);
+  });
 }
 
 // ---------------------------------------------------------------- fiche
@@ -254,7 +336,8 @@ function fmtMetric(m, v) {
     if (v >= 999) return "EBITDA négatif";
     return NF1.format(v) + " ×";
   }
-  return pct(v, 1, m === "rev_growth" || m === "rev_accel" || m === "oi_change_assets" || m.startsWith("mom"));
+  if (m === "sue") return sign(NF2.format(v));
+  return pct(v, 1, ["rev_growth", "rev_accel", "oi_change_assets", "ear", "gp_change"].includes(m) || m.startsWith("mom"));
 }
 
 function openDrawer(ticker) {
@@ -262,28 +345,36 @@ function openDrawer(ticker) {
   const meta = state.data.meta;
   const body = $("#drawer-body");
   if (!r) {
-    const h = state.data.portfolio.holdings.find((x) => x.ticker === ticker);
-    body.innerHTML = `<div class="d-head"><div class="tk">${esc(ticker)}</div><div class="nm">${esc(h?.name || "")}</div>
+    const h = portfolioOf()?.holdings.find((x) => x.ticker === ticker);
+    body.innerHTML = `<div class="d-head"><div class="tk" id="drawer-title">${esc(ticker)}</div><div class="nm">${esc(h?.name || "")}</div>
       <p class="sub">Ce titre n'est plus membre de l'indice : il sera vendu à la prochaine revue.</p></div>`;
   } else {
+    const mr = mrow(r);
     const x = r.extra || {};
     const cikPad = isNum(r.cik) ? String(Math.round(r.cik)) : "";
+    const w = meta.models[M()].weights;
     const metricRows = Object.keys(meta.metric_labels).map((m) => {
       const f = meta.metric_factor[m];
-      return `<tr><td>${esc(meta.metric_labels[m])}<br><span class="reasons">${esc(meta.factor_labels[f])}${meta.metric_by_sector[m] ? ", comparé au secteur" : ""}${meta.metric_direction[m] < 0 ? ", plus bas = mieux" : ""}</span></td>
+      const unused = !(w[f] > 0);
+      return `<tr${unused ? ' class="inel"' : ""}><td>${esc(meta.metric_labels[m])}<br><span class="reasons">${esc(meta.factor_labels[f])}${meta.metric_by_sector[m] ? ", comparé au secteur" : ""}${meta.metric_direction[m] < 0 ? ", plus bas = mieux" : ""}${unused ? ", non utilisé par ce modèle" : ""}</span></td>
         <td class="num">${fmtMetric(m, r.metrics[m])}</td><td class="num">${isNum(r.pct[m]) ? Math.round(r.pct[m]) : "—"}</td></tr>`;
     }).join("");
+    const others = Object.keys(meta.models).filter((m) => m !== M()).map((m) => {
+      const o = r.models[m];
+      return `${esc(meta.models[m].label)} : ${o.eligible ? `rang ${o.rank}, score ${NF1.format(o.score)}` : "non éligible"}`;
+    }).join(" · ");
     body.innerHTML = `
       <div class="d-head"><div class="tk" id="drawer-title">${esc(r.ticker)}</div><div class="nm">${esc(r.name)}</div>
         <div class="sub">${esc(r.sector)}${r.sub_industry ? ", " + esc(r.sub_industry) : ""}</div></div>
       <div class="d-score">
-        <div><div class="big">${isNum(r._score) ? NF1.format(r._score) : "—"}</div><div class="lab">score sur 100</div></div>
-        <div><div class="big">${r._rank ?? "—"}</div><div class="lab">rang${r.eligible ? "" : " (non éligible)"}</div></div>
-        <div><div class="big">${isNum(x.price_adj) ? "" : ""}${isNum(r.price) ? NF2.format(r.price) : "—"}</div><div class="lab">cours en $</div></div>
+        <div><div class="big">${isNum(r._score) ? NF1.format(r._score) : "—"}</div><div class="lab">score ${esc(mlabel())}</div></div>
+        <div><div class="big">${r._rank ?? "—"}</div><div class="lab">rang${r._eligible ? "" : " (non éligible)"}</div></div>
+        <div><div class="big">${isNum(r.price) ? NF2.format(r.price) : "—"}</div><div class="lab">cours en $</div></div>
       </div>
-      ${r.in_portfolio ? `<p><span class="chip buy">Dans le portefeuille modèle</span> ${r.action ? `À la prochaine revue : ${esc(r.action)}.` : ""}</p>` : ""}
-      ${r.eligible ? "" : `<p class="reasons">Exclu : ${esc((r.reasons || []).join(" ; "))}</p>`}
-      <div class="d-factors">${FACTORS.map((f) => `<div class="meter"><span class="lab">${esc(meta.factor_labels[f])}</span>
+      <p class="reasons">${others}</p>
+      ${mr.in_portfolio ? `<p><span class="chip buy">Dans le portefeuille modèle</span> ${mr.action ? `À la prochaine revue : ${esc(mr.action)}.` : ""}</p>` : ""}
+      ${r._eligible ? "" : `<p class="reasons">Exclu : ${esc((mr.reasons || []).join(" ; "))}</p>`}
+      <div class="d-factors">${meta.factors.map((f) => `<div class="meter${w[f] > 0 ? "" : " off"}"><span class="lab">${esc(meta.factor_labels[f])}</span>
         <span class="track"><span class="fill" style="width:${isNum(r.factors[f]) ? r.factors[f].toFixed(1) : 0}%"></span></span>
         <span class="v">${isNum(r.factors[f]) ? Math.round(r.factors[f]) : "—"}</span></div>`).join("")}</div>
       <h4>Mesures</h4>
@@ -298,6 +389,7 @@ function openDrawer(ticker) {
         <dt>Rendement sur 12 mois</dt><dd class="${tone(x.ret_1y)}">${pct(x.ret_1y, 1, true)}</dd>
         <dt>Volume moyen</dt><dd>${money(x.dollar_vol_63)} par jour</dd>
         <dt>Trimestre le plus récent</dt><dd>clos le ${esc(dateFr(x.quarter_end))}</dd>
+        <dt>Surprise mesurée sur</dt><dd>${x.sue_quarter ? "le trimestre clos le " + esc(dateFr(x.sue_quarter)) : "—"}</dd>
         <dt>Dernier dépôt SEC utilisé</dt><dd>${esc(dateFr(x.known_date))}${isNum(x.fundamentals_age_days) ? ` (il y a ${x.fundamentals_age_days} jours)` : ""}</dd>
         <dt>Derniers résultats publiés</dt><dd>${esc(dateFr(r.last_earnings))}</dd>
         <dt>Prochains résultats</dt><dd>${r.next_earnings_est ? "vers le " + esc(dateFr(r.next_earnings_est)) + " (estimation)" : "—"}</dd>
@@ -323,9 +415,10 @@ function initDrawer() {
 
 // ---------------------------------------------------------------- portefeuille
 function renderPortfolio() {
-  const p = state.data.portfolio;
-  if (!p) return;
-  const prm = p.params;
+  const pf = state.data.portfolio;
+  const p = portfolioOf();
+  if (!pf || !p) return;
+  const prm = pf.params;
   $("#rules").innerHTML = [
     `${prm.n_positions} lignes à poids égaux, ${Math.floor(prm.n_positions * prm.max_sector_fraction)} au maximum par secteur.`,
     `Revue le ${prm.review_day} de chaque mois de revue : ${prm.review_months.map((m) => MONTHS[m - 1]).join(", ")}.`,
@@ -333,6 +426,7 @@ function renderPortfolio() {
     "Vente aussi en cas d'offre de rachat, de sortie de l'indice ou de veto qualitatif.",
     `Frais simulés : ${NF2.format(prm.cost_per_trade * 100)} % de chaque montant échangé.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");
+  $("#holdings-title").textContent = `Lignes détenues, ${mlabel()}`;
   $("#holdings-table").innerHTML = `<thead><tr><th>Société</th><th class="hide-sm">Secteur</th><th class="num">Entrée</th>
     <th class="num">Depuis l'entrée</th><th class="num">Rang</th><th>Prochaine revue</th></tr></thead><tbody>${
     p.holdings.map((h) => `<tr><td><div class="co"><span class="tk">${esc(h.ticker)}</span><span class="nm">${esc(h.name || "")}</span></div></td>
@@ -373,16 +467,19 @@ function niceTicks(min, max, n = 5) {
 }
 
 function lineChart(el, opts) {
+  const existing = charts.find((c) => c.el === el);
+  if (existing) { existing.opts = opts; existing.draw(); return existing; }
   const chart = { el, opts, draw };
   charts.push(chart);
   function draw() {
+    const opts = chart.opts;
     const series = opts.series().filter((s) => s.points.length);
     const W = Math.max(el.clientWidth, 280), H = opts.height || (W < 600 ? 240 : 320);
     const m = { t: 12, r: series.length <= 4 && opts.endLabels !== false ? (W < 600 ? 64 : 120) : 16, b: 28, l: 52 };
     const xs = series.flatMap((s) => s.points.map((p) => p[0]));
     const ys = series.flatMap((s) => s.points.map((p) => p[1])).filter(isNum);
     if (!xs.length) { el.innerHTML = '<p class="empty-state">Pas encore de données.</p>'; return; }
-    let x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
     let y0 = Math.min(...ys, opts.yMin ?? Infinity), y1 = Math.max(...ys, opts.yMax ?? -Infinity);
     const log = opts.log && y0 > 0;
     const ty = (v) => (log ? Math.log(v) : v);
@@ -391,8 +488,8 @@ function lineChart(el, opts) {
     const Y0 = ty(y0) - (opts.yMin != null && !log ? 0 : pad), Y1 = ty(y1) + pad;
     const sx = (v) => m.l + ((v - x0) / (x1 - x0 || 1)) * (W - m.l - m.r);
     const sy = (v) => m.t + (1 - (ty(v) - Y0) / (Y1 - Y0)) * (H - m.t - m.b);
-    let yt = log ? niceTicks(y0, y1, 5).filter((v) => v > 0) : niceTicks(Y0, Y1, 5);
-    if (log) { yt = []; const cands = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 15, 20]; cands.forEach((c) => { if (c >= y0 * 0.95 && c <= y1 * 1.05) yt.push(c); }); }
+    let yt = niceTicks(Y0, Y1, 5);
+    if (log) { yt = []; [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 15, 20].forEach((c) => { if (c >= y0 * 0.95 && c <= y1 * 1.05) yt.push(c); }); }
     const xt = opts.xTicks ? opts.xTicks(x0, x1) : yearTicks(x0, x1, W);
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(opts.label)}">`;
     svg += '<g class="grid">' + yt.map((v) => `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(v)}" y2="${sy(v)}"/>`).join("") + "</g>";
@@ -415,7 +512,7 @@ function lineChart(el, opts) {
     el.innerHTML = svg + legend;
     const svgEl = $("svg", el), xh = $(".xh", el), tip = $("#tooltip");
     const allX = [...new Set(xs)].sort((a, b) => a - b);
-    const move = (e) => {
+    svgEl.addEventListener("pointermove", (e) => {
       const rect = svgEl.getBoundingClientRect();
       const px = ((e.clientX - rect.left) / rect.width) * W;
       const xv = x0 + ((px - m.l) / (W - m.l - m.r)) * (x1 - x0);
@@ -430,10 +527,8 @@ function lineChart(el, opts) {
       tip.hidden = false;
       const tx = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
       tip.style.left = tx + "px"; tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + "px";
-    };
-    const leave = () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); };
-    svgEl.addEventListener("pointermove", move);
-    svgEl.addEventListener("pointerleave", leave);
+    });
+    svgEl.addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); });
   }
   draw();
   return chart;
@@ -447,38 +542,53 @@ function yearTicks(x0, x1, W) {
   return out;
 }
 const ts = (s) => parseDate(s).getTime();
+const isoDate = (x) => dateFr(new Date(x).toISOString().slice(0, 10));
 
 // ---------------------------------------------------------------- backtest
-const RUN_COLORS = { reference: "--s1", equal_weight: "--s2", sp500: "--s3", equal_weights: "--s4", trend_filter: "--s5", fixed_12m: "--s6" };
+const VARIANT_COLORS = { equal_weights: "--s5", trend_filter: "--s6", fixed_12m: "--s7" };
+const MODEL_COLORS = { v1: "--s2", v2: "--s1" };
+const extraVariants = new Set();
+
 function renderBacktest() {
   const b = state.data.backtest;
-  if (!b) return;
+  if (!b || !b.per_model) return;
   const L = b.labels;
-  $("#holdout-notice").innerHTML = b.revealed
-    ? `Période réservée révélée : les résultats depuis le ${esc(dateFr(b.holdout_start, true))} sont inclus. Le modèle ne doit plus être modifié en fonction de ces résultats.`
-    : `Les résultats sont affichés du ${esc(dateFr(b.start, true))} au ${esc(dateFr(b.design_end, true))}. La période depuis le ${esc(dateFr(b.holdout_start, true))} est réservée : elle reste masquée tant que le modèle n'est pas figé, puis sera révélée une seule fois (paramètre <code>holdout.revealed</code> de <code>config/protocol.yaml</code>).`;
-  $("#criteria").innerHTML = b.criteria.map((c) => {
+  const pm = b.per_model[M()];
+  let notice = b.revealed
+    ? `Période réservée révélée : les résultats depuis le ${esc(dateFr(b.holdout_start, true))} sont inclus. Les modèles ne doivent plus être modifiés en fonction de ces résultats.`
+    : `Les résultats sont affichés du ${esc(dateFr(b.start, true))} au ${esc(dateFr(b.design_end, true))}. La période depuis le ${esc(dateFr(b.holdout_start, true))} est réservée : elle reste masquée jusqu'à ce que les modèles soient figés, puis sera révélée une seule fois pour les deux (paramètre <code>holdout.revealed</code> de <code>config/protocol.yaml</code>).`;
+  if (M() === "v2") notice += `<br><strong>V2 a été conçue après avoir vu les résultats de V1 sur cette période.</strong> Ses chiffres ci-dessous ne valent pas validation : seule la période réservée, puis le suivi réel, pourront la juger.`;
+  $("#holdout-notice").innerHTML = notice;
+  $("#criteria-title").textContent = `Critères fixés avant les tests, ${mlabel()}`;
+  $("#criteria").innerHTML = pm.criteria.map((c) => {
     const k = c.status === "réussi" ? "ok" : c.status === "échoué" ? "ko" : "na";
     const icon = k === "ok" ? "✓" : k === "ko" ? "✕" : "?";
     return `<li class="${k}"><span class="ic" aria-hidden="true">${icon}</span><span><span class="st">${esc(c.status[0].toUpperCase() + c.status.slice(1))}</span> : ${esc(c.text)}<span class="dt">${esc(c.detail)}</span></span></li>`;
   }).join("");
 
-  const extra = new Set();
+  renderSuccess(pm.success, b.success_top_n);
+
   const opt = ["equal_weights", "trend_filter", "fixed_12m"];
-  $("#variant-toggles").innerHTML = opt.map((v) => `<label><input type="checkbox" data-v="${v}"> ${esc(L[v])}</label>`).join("");
-  $$("#variant-toggles input").forEach((i) => i.addEventListener("change", () => { i.checked ? extra.add(i.dataset.v) : extra.delete(i.dataset.v); eq.draw(); }));
-  const mk = (key, short) => ({ key, label: L[key] || key, short, color: RUN_COLORS[key],
+  $("#variant-toggles").innerHTML = opt.map((v) => `<label><input type="checkbox" data-v="${v}"${extraVariants.has(v) ? " checked" : ""}> ${esc(L[v])}</label>`).join("");
+  $$("#variant-toggles input").forEach((i) => i.addEventListener("change", () => { i.checked ? extraVariants.add(i.dataset.v) : extraVariants.delete(i.dataset.v); eq.draw(); }));
+  const mk = (key, label, short, color, width) => ({ key, label, short, color, width,
     points: b.curves.filter((r) => isNum(r[key])).map((r) => [ts(r.date), r[key]]) });
   const eq = lineChart($("#equity-chart"), {
-    label: "Valeur de 1 dollar investi", log: true,
-    series: () => [mk("reference", "Référence"), mk("equal_weight", "Équipondéré"), mk("sp500", "S&P 500"), ...[...extra].map((k) => mk(k, L[k]))],
-    yFormat: (v) => NF2.format(v) + " $", xFormat: (x) => dateFr(new Date(x).toISOString().slice(0, 10)),
+    label: "Valeur de 1 dollar investi", log: true, endLabels: true,
+    series: () => [
+      ...b.models.map((m) => mk(m, L[m], L[m], MODEL_COLORS[m] || "--s3", m === M() ? 2.5 : 1.5)),
+      mk("equal_weight", L.equal_weight, "Équipondéré", "--s3"),
+      mk("sp500", L.sp500, "S&P 500", "--s4"),
+      ...[...extraVariants].map((v) => mk(`${M()}:${v}`, `${L[v]} (${mlabel()})`, L[v], VARIANT_COLORS[v])),
+    ],
+    yFormat: (v) => NF2.format(v) + " $", xFormat: isoDate,
   });
   lineChart($("#dd-chart"), {
     label: "Baisse depuis le plus haut", area: true, zero: 0, height: 180, endLabels: false, yMax: 0,
-    series: () => [{ key: "dd", label: "Référence", color: "--s1", points: b.drawdown.map((r) => [ts(r.date), r.value]) }],
-    yFormat: (v) => pct(v, 0), xFormat: (x) => dateFr(new Date(x).toISOString().slice(0, 10)),
+    series: () => [{ key: "dd", label: mlabel(), color: MODEL_COLORS[M()] || "--s1", points: pm.drawdown.map((r) => [ts(r.date), r.value]) }],
+    yFormat: (v) => pct(v, 0), xFormat: isoDate,
   });
+  $("#dd-title").textContent = `Baisse depuis le plus haut, ${mlabel()}`;
 
   const cols = [["cagr", "Rendement annuel", (v) => pct(v, 1)], ["excess_equal_weight", "Écart vs équipondéré", (v) => pct(v, 1, true)],
     ["excess_sp500", "Écart vs S&P 500", (v) => pct(v, 1, true)], ["volatility", "Volatilité", (v) => pct(v, 1)],
@@ -486,30 +596,51 @@ function renderBacktest() {
     ["te_equal_weight", "Écart de suivi", (v) => pct(v, 1)], ["turnover_per_year", "Rotation / an", (v) => pct(v, 0)],
     ["hit_rate", "Positions gagnantes", (v) => pct(v, 0)]];
   const head = `<thead><tr><th>Stratégie</th>${cols.map((c) => `<th class="num">${c[1]}</th>`).join("")}</tr></thead>`;
-  const row = (name, m, cls = "") => `<tr class="${cls}"><td>${esc(L[name] || name)}</td>${cols.map(([k, , f]) => {
-    const v = m?.[k]; const t = k.startsWith("excess") ? tone(v) : "";
+  const row = (label, mm, cls = "") => `<tr class="${cls}"><td>${esc(label)}</td>${cols.map(([k, , f]) => {
+    const v = mm?.[k]; const t = k.startsWith("excess") ? tone(v) : "";
     return `<td class="num ${t}">${f(v)}</td>`;
   }).join("")}</tr>`;
-  const ref = b.metrics.reference?.design || {};
+  const ref = pm.metrics.reference?.design || {};
   const benchRow = (key, label) => `<tr class="bench"><td>${esc(label)}</td><td class="num">${pct(ref["bench_cagr_" + key], 1)}</td>${cols.slice(1).map(() => '<td class="num">—</td>').join("")}</tr>`;
+  const span = cols.length + 1;
+  $("#metrics-title").textContent = `Résultats sur la période de conception, ${mlabel()}`;
   $("#metrics-table").innerHTML = head + "<tbody>" +
-    row("reference", ref, "ref") +
-    `<tr class="group"><td colspan="${cols.length + 1}">Variantes</td></tr>` +
-    b.variants.filter((v) => v !== "reference").map((v) => row(v, b.metrics[v]?.design)).join("") +
-    `<tr class="group"><td colspan="${cols.length + 1}">Tests de robustesse</td></tr>` +
-    b.robustness.map((v) => row(v, b.metrics[v]?.design)).join("") +
-    `<tr class="group"><td colspan="${cols.length + 1}">Indices de référence</td></tr>` +
+    b.models.map((m) => row(`${L[m]}, référence`, b.per_model[m].metrics.reference?.design, m === M() ? "ref" : "")).join("") +
+    `<tr class="group"><td colspan="${span}">Variantes (${esc(mlabel())})</td></tr>` +
+    b.variants.filter((v) => v !== "reference").map((v) => row(L[v], pm.metrics[v]?.design)).join("") +
+    `<tr class="group"><td colspan="${span}">Tests de robustesse (${esc(mlabel())})</td></tr>` +
+    b.robustness.map((v) => row(L[v], pm.metrics[v]?.design)).join("") +
+    `<tr class="group"><td colspan="${span}">Indices de référence</td></tr>` +
     benchRow("equal_weight", L.equal_weight) + benchRow("sp500", L.sp500) + "</tbody>";
 
-  const subs = (b.metrics.reference?.subperiods || []).concat(b.revealed && b.metrics.reference.holdout ? [{ ...b.metrics.reference.holdout, _h: true }] : []);
-  $("#sub-table").innerHTML = `<thead><tr><th>Période</th><th class="num">Référence</th><th class="num">Équipondéré</th><th class="num">S&amp;P 500</th><th class="num">Écart vs équipondéré</th><th class="num">Pire baisse</th><th class="num">Pire 12 mois relatifs</th></tr></thead><tbody>${
+  const subs = (pm.metrics.reference?.subperiods || []).concat(b.revealed && pm.metrics.reference.holdout ? [{ ...pm.metrics.reference.holdout, _h: true }] : []);
+  $("#sub-table").innerHTML = `<thead><tr><th>Période</th><th class="num">${esc(mlabel())}</th><th class="num">Équipondéré</th><th class="num">S&amp;P 500</th><th class="num">Écart vs équipondéré</th><th class="num">Pire baisse</th><th class="num">Pire 12 mois relatifs</th></tr></thead><tbody>${
     subs.map((s) => `<tr><td>${esc(dateFr(s.start))} au ${esc(dateFr(s.end))}${s._h ? " (réservée)" : ""}</td><td class="num">${pct(s.cagr)}</td><td class="num">${pct(s.bench_cagr_equal_weight)}</td>
     <td class="num">${pct(s.bench_cagr_sp500)}</td><td class="num ${tone(s.excess_equal_weight)}">${pct(s.excess_equal_weight, 1, true)}</td><td class="num">${pct(s.max_drawdown)}</td><td class="num">${pct(s.worst_12m_rel_equal_weight, 1, true)}</td></tr>`).join("")}</tbody>`;
-  $("#yearly-table").innerHTML = `<thead><tr><th>Année</th><th class="num">Référence</th><th class="num">Équipondéré</th><th class="num">S&amp;P 500</th><th class="num">Écart vs équipondéré</th></tr></thead><tbody>${
-    b.yearly.map((y) => { const ex = isNum(y.reference) && isNum(y.equal_weight) ? y.reference - y.equal_weight : null;
-      return `<tr><td>${y.year}</td><td class="num">${pct(y.reference)}</td><td class="num">${pct(y.equal_weight)}</td><td class="num">${pct(y.sp500)}</td><td class="num ${tone(ex)}">${pct(ex, 1, true)}</td></tr>`; }).join("")}</tbody>`;
+  $("#yearly-table").innerHTML = `<thead><tr><th>Année</th>${b.models.map((m) => `<th class="num">${esc(L[m])}</th>`).join("")}<th class="num">Équipondéré</th><th class="num">S&amp;P 500</th><th class="num">Écart ${esc(mlabel())} vs équipondéré</th></tr></thead><tbody>${
+    b.yearly.map((y) => { const ex = isNum(y[M()]) && isNum(y.equal_weight) ? y[M()] - y.equal_weight : null;
+      return `<tr><td>${y.year}</td>${b.models.map((m) => `<td class="num">${pct(y[m])}</td>`).join("")}<td class="num">${pct(y.equal_weight)}</td><td class="num">${pct(y.sp500)}</td><td class="num ${tone(ex)}">${pct(ex, 1, true)}</td></tr>`; }).join("")}</tbody>`;
   $("#bt-limits").innerHTML = `<p>Ordres simulés à la clôture de la séance suivant chaque revue, ${NF2.format(b.cost_per_trade * 100)} % de frais par transaction, dividendes réinvestis, avant impôts et frais de change. Les années incomplètes (première et dernière) ne couvrent qu'une partie de l'année.</p>
     <p>Le backtest ne contient que les sociétés dont Yahoo fournit encore les cours : celles rachetées ou en faillite manquent, ce qui embellit les résultats (voir l'onglet Données). Avec une quinzaine d'années de recul, un écart de quelques points par an n'est pas statistiquement prouvé : ce test sert surtout à repérer un modèle défaillant.</p>`;
+}
+
+function renderSuccess(rows, topN) {
+  const el = $("#success");
+  if (!rows || !rows.length) { el.innerHTML = '<p class="empty-state">Historique insuffisant pour cette mesure.</p>'; return; }
+  const qcell = (v) => {
+    if (!isNum(v)) return '<td class="num">—</td>';
+    const a = Math.min(Math.abs(v) / 0.08, 1);
+    const col = v >= 0 ? css("--div-pos") : css("--div-neg");
+    return `<td class="num" style="background:color-mix(in srgb, ${col} ${Math.round(a * 38)}%, transparent)">${pct(v, 1, true)}</td>`;
+  };
+  el.innerHTML = `<p class="prose">Chaque fin de mois, on prend tous les titres éligibles classés par ${esc(mlabel())}, on mesure leur rendement sur l'horizon choisi et on le compare à la moyenne équipondérée de cet univers. Le <strong>taux de base</strong> est la part des titres qui battent cette moyenne : un tirage au hasard ferait aussi bien. Le classement n'apporte quelque chose que si les ${topN} premiers font mieux, et si l'écart entre le meilleur et le moins bon quintile est positif. Classement brut, sans plafond sectoriel ni bande de tolérance.</p>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Horizon</th><th class="num">Taux de base</th><th class="num">Top ${topN} : taux de réussite</th><th class="num">Top ${topN} : écart moyen</th><th class="num">Mois où le top ${topN} bat l'univers</th>
+      <th class="num">Q1 (meilleurs)</th><th class="num">Q2</th><th class="num">Q3</th><th class="num">Q4</th><th class="num">Q5</th><th class="num">Écart Q1 − Q5</th><th class="num" title="Corrigé du chevauchement des fenêtres">t</th></tr></thead><tbody>${
+    rows.map((r) => `<tr><td>${r.horizon} mois</td><td class="num">${pct(r.base_rate, 1)}</td>
+      <td class="num ${r.top_rate > r.base_rate ? "pos" : "neg"}">${pct(r.top_rate, 1)}</td><td class="num ${tone(r.top_excess)}">${pct(r.top_excess, 1, true)}</td>
+      <td class="num">${pct(r.top_beats_universe_share, 0)}</td>${r.quintiles.map(qcell).join("")}
+      <td class="num ${tone(r.spread)}">${pct(r.spread, 1, true)}</td><td class="num">${num(r.spread_t_overlap_adj, 1)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="reasons">${rows[0].n_months} fins de mois mesurées. Un t inférieur à 2 en valeur absolue signifie que l'écart n'est pas distinguable du hasard.</p>`;
 }
 
 // ---------------------------------------------------------------- facteurs
@@ -517,22 +648,21 @@ function icCell(v) {
   if (!isNum(v)) return '<td class="num">—</td>';
   const a = Math.min(Math.abs(v) / 0.15, 1);
   const col = v >= 0 ? css("--div-pos") : css("--div-neg");
-  const bg = `color-mix(in srgb, ${col} ${Math.round(a * 38)}%, transparent)`;
-  return `<td class="num" style="background:${bg}">${sign(NF3.format(v))}</td>`;
+  return `<td class="num" style="background:color-mix(in srgb, ${col} ${Math.round(a * 38)}%, transparent)">${sign(NF3.format(v))}</td>`;
 }
 function renderFactors() {
   const f = state.data.factors;
   if (!f || !f.summary.length) { $("#ic-table").innerHTML = '<tbody><tr><td class="empty-state">Historique insuffisant pour cette analyse.</td></tr></tbody>'; return; }
-  const L = f.labels, H = f.horizons, keys = [...FACTORS, "composite"];
+  const L = f.labels, H = f.horizons, keys = (f.order || []).filter((k) => f.summary.some((r) => r.factor === k));
   const get = (k, h) => f.summary.find((r) => r.factor === k && r.horizon === h);
   $("#ic-table").innerHTML = `<thead><tr><th>Facteur</th>${H.map((h) => `<th class="num">${h} mois</th>`).join("")}<th class="num" title="t-statistique à 12 mois corrigée du chevauchement des fenêtres">t à 12 mois</th><th class="num">Mois positifs à 12 mois</th></tr></thead><tbody>${
     keys.map((k) => { const r12 = get(k, 12);
-      return `<tr${k === "composite" ? ' class="ref"' : ""}><td>${esc(L[k])}</td>${H.map((h) => icCell(get(k, h)?.mean_ic)).join("")}
+      return `<tr${k.startsWith("composite") ? ' class="ref"' : ""}><td>${esc(L[k])}</td>${H.map((h) => icCell(get(k, h)?.mean_ic)).join("")}
       <td class="num">${num(r12?.t_overlap_adj, 1)}</td><td class="num">${pct(r12?.pct_positive, 0)}</td></tr>`; }).join("")}</tbody>`;
-  const colors = { growth: "--s1", momentum: "--s2", quality: "--s3", value: "--s4", risk: "--s5", composite: "--s6" };
+  const colors = { growth: "--s1", earnings: "--s2", momentum: "--s3", quality: "--s4", value: "--s5", risk: "--s6" };
   lineChart($("#decay-chart"), {
     label: "Corrélation moyenne selon l'horizon", zero: 0, endLabels: false,
-    series: () => keys.map((k) => ({ key: k, label: L[k], color: colors[k], width: k === "composite" ? 3 : 2,
+    series: () => keys.filter((k) => colors[k]).map((k) => ({ key: k, label: L[k], color: colors[k],
       points: f.decay.filter((r) => r.factor === k).flatMap((r) => H.map((h) => [h, r[String(h)]])).filter((p) => isNum(p[1])) })),
     yFormat: (v) => sign(NF2.format(v)), tipFormat: (v) => sign(NF3.format(v)), xFormat: (x) => `${x} mois`,
     xTicks: () => H.map((h) => [h, `${h} m`]),
@@ -555,6 +685,7 @@ function renderAudit() {
     ["Cours", st.prices ? `${st.prices.downloaded} séries sur ${st.prices.requested} demandées` : "—"],
     ["Séries anciennes conservées", st.prices?.stale?.length ? st.prices.stale.join(", ") : "aucune"],
     ["Dépôts SEC", st.sec ? `${st.sec.submissions_ok} sociétés lues, ${st.sec.facts_updated} jeux de comptes mis à jour, ${st.sec.errors} erreur(s)` : "—"],
+    ["Rapports en attente à la SEC", isNum(st.filings_pending_xbrl) ? `${st.filings_pending_xbrl} sociétés (déposés mais pas encore dans les données XBRL)` : "—"],
   ];
   $("#sources").innerHTML = facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("") +
     (m.warnings?.length ? `<dt>Alertes</dt><dd class="flags">${m.warnings.map(esc).join("<br>")}</dd>` : "");
@@ -571,13 +702,13 @@ function renderAudit() {
   lineChart($("#elig-chart"), {
     label: "Nombre de titres éligibles", height: 180, endLabels: false,
     series: () => [{ key: "e", label: "Titres éligibles", color: "--s1", points: a.eligible_over_time.map((r) => [ts(r.date), r.eligible]) }],
-    yFormat: (v) => NF0.format(v), xFormat: (x) => dateFr(new Date(x).toISOString().slice(0, 10)),
+    yFormat: (v) => NF0.format(v), xFormat: isoDate,
   });
   const et = Object.entries(a.eligibility_today);
-  $("#elig-today").innerHTML = `<div class="stat-row"><div class="stat"><div class="n">${a.eligible_today}</div><div class="l">titres éligibles</div></div></div>` +
-    (et.length ? `<p class="reasons">Motifs d'exclusion des autres membres :</p>` + et.map(([k, v]) => `<div class="hbar"><span class="lab" title="${esc(k)}">${esc(k)}</span><span class="track"><span class="fill" style="width:${(v / m.counts.members) * 100 * 4}%"></span></span><span class="v">${v}</span></div>`).join("") : "");
+  $("#elig-today").innerHTML = `<div class="stat-row"><div class="stat"><div class="n">${a.eligible_today}</div><div class="l">titres éligibles (${esc(mlabel(m.default_model))})</div></div></div>` +
+    (et.length ? `<p class="reasons">Motifs d'exclusion des autres membres :</p>` + et.map(([k, v]) => `<div class="hbar"><span class="lab">${esc(k)}</span><span class="track"><span class="fill" style="width:${Math.min(100, (v / m.counts.members) * 400)}%"></span></span><span class="v">${v}</span></div>`).join("") : "");
   const cov = a.sec_coverage.metric_coverage;
-  $("#coverage").innerHTML = Object.entries(cov).map(([k, v]) => `<div class="hbar"><span class="lab" title="${esc(m.metric_labels[k])}">${esc(m.metric_labels[k])}</span><span class="track"><span class="fill" style="width:${v * 100}%"></span></span><span class="v">${Math.round(v * 100)}</span></div>`).join("") +
+  $("#coverage").innerHTML = Object.entries(cov).map(([k, v]) => `<div class="hbar"><span class="lab">${esc(m.metric_labels[k])}</span><span class="track"><span class="fill" style="width:${v * 100}%"></span></span><span class="v">${Math.round(v * 100)}</span></div>`).join("") +
     '<p class="reasons">Part des membres hors financières et immobilier pour lesquels la mesure est calculable, en %.</p>';
   const fl = Object.entries(a.flags || {});
   $("#flags").innerHTML = fl.length ? fl.map(([k, v]) => `<div class="review"><span class="d">${v}</span> <span class="l">${esc(k)}</span></div>`).join("") : '<p class="reasons">Aucun.</p>';
@@ -587,8 +718,9 @@ function renderMethod() {
   const m = state.data.meta;
   const byF = {};
   Object.keys(m.metric_labels).forEach((k) => { (byF[m.metric_factor[k]] ||= []).push(k); });
-  $("#method-metrics").innerHTML = `<thead><tr><th>Facteur</th><th class="num">Poids</th><th>Mesures</th></tr></thead><tbody>${
-    FACTORS.map((f) => `<tr><td>${esc(m.factor_labels[f])}</td><td class="num">${NF0.format(m.weights[f] * 100)} %</td>
+  const ms = Object.keys(m.models);
+  $("#method-metrics").innerHTML = `<thead><tr><th>Facteur</th>${ms.map((x) => `<th class="num">${esc(m.models[x].label)}</th>`).join("")}<th>Mesures</th></tr></thead><tbody>${
+    m.factors.map((f) => `<tr><td>${esc(m.factor_labels[f])}</td>${ms.map((x) => `<td class="num">${m.models[x].weights[f] > 0 ? NF0.format(m.models[x].weights[f] * 100) + " %" : "—"}</td>`).join("")}
       <td>${byF[f].map((k) => esc(m.metric_labels[k]) + (m.metric_direction[k] < 0 ? " (plus bas = mieux)" : "")).join("<br>")}</td></tr>`).join("")}</tbody>`;
 }
 
@@ -599,16 +731,15 @@ async function main() {
     await load();
   } catch (e) {
     $("#freshness").textContent = "";
-    $("#board").innerHTML = '<div class="tile empty">Les données ne sont pas encore générées. Lancez le workflow « Actualisation » dans l\'onglet Actions du dépôt GitHub.</div>';
+    $("#board").innerHTML = '<div class="tile empty">Les données ne sont pas encore générées ou sont dans un ancien format. Elles le seront à la prochaine actualisation.</div>';
     return;
   }
   renderHeader();
-  renderBoard();
+  initModel();
   initRanking();
   initDrawer();
-  renderPortfolio();
   initTabs();
-  renderBacktest();
+  applyModel();
   renderFactors();
   renderAudit();
   renderMethod();

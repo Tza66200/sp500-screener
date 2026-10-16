@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 SUB_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
+SUB_OLD_URL = "https://data.sec.gov/submissions/{name}"
 PERIODIC_FORMS = {"10-K", "10-Q", "10-K/A", "10-Q/A", "10-KT", "10-QT"}
 SEC_DIR = DATA_DIR / "sec"
 UNITS = {"USD", "shares"}
@@ -49,11 +50,17 @@ def parse_submissions(data: dict) -> tuple[dict, pd.DataFrame]:
         "fiscal_year_end": data.get("fiscalYearEnd"),
     }
     recent = (data.get("filings") or {}).get("recent") or {}
-    cols = ["accessionNumber", "filingDate", "reportDate", "acceptanceDateTime", "form", "items"]
-    n = len(recent.get("accessionNumber", []))
-    filings = pd.DataFrame({c: recent.get(c, [None] * n) for c in cols})
+    return meta, filings_frame(recent)
+
+
+FILING_COLS = ["accessionNumber", "filingDate", "reportDate", "acceptanceDateTime", "form", "items"]
+
+
+def filings_frame(block: dict) -> pd.DataFrame:
+    n = len(block.get("accessionNumber", []))
+    filings = pd.DataFrame({c: block.get(c, [None] * n) for c in FILING_COLS})
     filings["filingDate"] = pd.to_datetime(filings["filingDate"], errors="coerce")
-    return meta, filings
+    return filings
 
 
 def parse_companyfacts(data: dict, tags: dict[tuple[str, str], str]) -> pd.DataFrame:
@@ -126,7 +133,27 @@ def refresh(ciks: list[int], concepts: dict, per_second: float = 8.0, workers: i
                        session=session, allow_404=True)
         if sub is None:
             return cik, None, None, "submissions introuvables"
-        meta, filings = parse_submissions(sub.json())
+        sub_data = sub.json()
+        meta, filings = parse_submissions(sub_data)
+        # Dépôts plus anciens (au-delà des ~1 000 derniers) : fichiers annexes, figés une fois
+        # publiés, donc téléchargés une seule fois. Ils donnent l'historique des publications
+        # de résultats (8-K, item 2.02).
+        old_dir = SEC_DIR / "submissions_old"
+        old_dir.mkdir(parents=True, exist_ok=True)
+        parts = [filings]
+        for fdesc in (sub_data.get("filings") or {}).get("files") or []:
+            name = fdesc.get("name")
+            if not name:
+                continue
+            cp = old_dir / f"{name}.parquet"
+            if not cp.exists():
+                r = http.get(SUB_OLD_URL.format(name=name), headers=headers, limiter=limiter,
+                             session=session, allow_404=True)
+                if r is None:
+                    continue
+                filings_frame(r.json()).to_parquet(cp, index=False)
+            parts.append(pd.read_parquet(cp))
+        filings = pd.concat(parts, ignore_index=True).drop_duplicates("accessionNumber")
         filings.to_parquet(SEC_DIR / "submissions" / f"{cik}.parquet", index=False)
         latest = _latest_periodic(filings)
         facts_path = SEC_DIR / "facts" / f"{cik}.parquet"
@@ -188,6 +215,16 @@ def load_facts(cik: int) -> pd.DataFrame | None:
 def load_tags(cik: int) -> pd.DataFrame | None:
     p = SEC_DIR / "tags" / f"{cik}.parquet"
     return pd.read_parquet(p) if p.exists() else None
+
+
+def earnings_dates(cik: int) -> list[pd.Timestamp]:
+    """Dates des communiqués de résultats (8-K, item 2.02)."""
+    fl = load_filings(cik)
+    if fl is None or fl.empty:
+        return []
+    e = fl[fl["form"].isin(["8-K", "8-K/A"]) &
+           fl["items"].fillna("").str.contains("2.02", regex=False)]
+    return sorted(pd.to_datetime(e["filingDate"]).dropna().dt.normalize().unique())
 
 
 def load_filings(cik: int) -> pd.DataFrame | None:

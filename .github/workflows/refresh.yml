@@ -49,7 +49,7 @@ jobs:
       - name: Collecte et calculs
         env:
           SEC_CONTACT_EMAIL: ${{ secrets.SEC_CONTACT_EMAIL }}
-          SCREENER_DEBUG_CIKS: "34088,721371,21344,1534701,59478,1841666,879169,906163,936340,320193,40533"
+          SCREENER_DEBUG_CIKS: "935703,34088,721371,21344,1534701,59478,1841666,879169,906163,936340,320193,40533"
         run: |
           set -o pipefail
           python -m screener.pipeline run 2>&1 | tee run.log

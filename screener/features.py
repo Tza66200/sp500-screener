@@ -17,6 +17,9 @@ METRICS = {
     "rev_growth":       ("growth",   +1, True),
     "rev_accel":        ("growth",   +1, True),
     "oi_change_assets": ("growth",   +1, True),
+    "sue":              ("earnings", +1, False),
+    "ear":              ("earnings", +1, False),
+    "gp_change":        ("earnings", +1, True),
     "mom_12_1":         ("momentum", +1, False),
     "mom_6_1":          ("momentum", +1, False),
     "gp_assets":        ("quality",  +1, True),
@@ -31,6 +34,9 @@ METRIC_LABELS = {
     "rev_growth": "Croissance du CA sur 1 an (12 mois glissants)",
     "rev_accel": "Accélération du CA (trimestre vs trimestre précédent, sur 1 an)",
     "oi_change_assets": "Variation du résultat opérationnel / actifs",
+    "sue": "Surprise de résultats standardisée (dernier trimestre)",
+    "ear": "Réaction du cours aux derniers résultats (3 jours, vs équipondéré)",
+    "gp_change": "Variation sur un an de la marge brute / actifs",
     "mom_12_1": "Rendement 12 mois hors dernier mois",
     "mom_6_1": "Rendement 6 mois hors dernier mois",
     "gp_assets": "Marge brute / actifs",
@@ -54,6 +60,8 @@ class Context:
     history: pd.DataFrame           # composition historique
     current: pd.DataFrame           # composition actuelle
     excluded_sectors: list[str]
+    earnings: dict = field(default_factory=dict)   # cik -> dates des communiqués de résultats
+    market: str = "RSP"                            # référence pour la réaction aux résultats
     logret: pd.DataFrame = field(init=False)
     dollar_vol: pd.DataFrame = field(init=False)
     split_lookup: dict = field(init=False)
@@ -69,6 +77,12 @@ class Context:
         self.states = st.sort_values(["cik", "usable_date"]).reset_index(drop=True)
         self.info = self.info.copy()
         self.info["cik"] = pd.to_numeric(self.info["cik"], errors="coerce").astype(float)
+        cal = self.prices["adj_close"].index
+        # Position (séance) de chaque communiqué : première séance >= date de dépôt
+        self.earn_pos = {float(c): np.asarray(cal.searchsorted(pd.DatetimeIndex(v)), dtype=int)
+                         for c, v in self.earnings.items() if len(v)}
+        self.adj_values = self.prices["adj_close"].ffill().values
+        self.adj_col = {t: j for j, t in enumerate(self.prices["adj_close"].columns)}
 
     @property
     def calendar(self) -> pd.DatetimeIndex:
@@ -110,6 +124,35 @@ def price_features(ctx: Context, p: int, tickers: list[str]) -> pd.DataFrame:
     return out
 
 
+EAR_MAX_AGE_DAYS = 100
+
+
+def ear_feature(ctx: Context, p: int, frame: pd.DataFrame) -> pd.Series:
+    """Rendement anormal sur 3 séances (veille, jour, lendemain du communiqué de résultats),
+    moins celui du S&P 500 équipondéré. Dernier communiqué dont la fenêtre est close à p."""
+    out = pd.Series(np.nan, index=frame.index)
+    cal = ctx.calendar
+    m = ctx.adj_col.get(ctx.market)
+    if m is None:
+        return out
+    px = ctx.adj_values
+    for t, cik in frame["cik"].items():
+        pos = ctx.earn_pos.get(cik) if pd.notna(cik) else None
+        j = ctx.adj_col.get(t)
+        if pos is None or j is None:
+            continue
+        k = np.searchsorted(pos, p - 1, side="right") - 1
+        if k < 0:
+            continue
+        e = pos[k]
+        if e < 1 or e + 1 > p or (cal[p] - cal[e]).days > EAR_MAX_AGE_DAYS:
+            continue
+        a0, a1, m0, m1 = px[e - 1, j], px[e + 1, j], px[e - 1, m], px[e + 1, m]
+        if np.isfinite(a0) and np.isfinite(a1) and a0 > 0 and m0 > 0:
+            out[t] = (a1 / a0 - 1) - (m1 / m0 - 1)
+    return out
+
+
 def latest_states(ctx: Context, when: pd.Timestamp) -> pd.DataFrame:
     st = ctx.states[ctx.states["usable_date"] <= when]
     return st.groupby("cik", sort=False).tail(1).set_index("cik")
@@ -129,6 +172,9 @@ def fundamental_features(ctx: Context, frame: pd.DataFrame, when: pd.Timestamp) 
     gp = f["gross_profit_ttm"]
     f["gp_fallback"] = gp.isna() & f["oi_ttm"].notna()
     f["gp_assets"] = gp.fillna(f["oi_ttm"]) / assets
+    assets_prev = f["assets_prev"].where(f["assets_prev"] > 0)
+    gp_prev = f["gross_profit_ttm_prev"].where(~f["gp_fallback"], f["oi_ttm_prev"])
+    f["gp_change"] = f["gp_assets"] - gp_prev / assets_prev
     f["accruals"] = (f["ni_ttm"] - f["cfo_ttm"]) / assets
 
     ebitda = f["oi_ttm"] + f["dna_ttm"].fillna(0)
@@ -171,5 +217,6 @@ def compute(ctx: Context, when: pd.Timestamp, live: bool = False) -> pd.DataFram
     frame = base.join(pf)
     frame["cik"] = pd.to_numeric(frame["cik"], errors="coerce")
     feats = fundamental_features(ctx, frame, asof)
+    feats["ear"] = ear_feature(ctx, p, feats)
     feats["asof"] = asof
     return feats

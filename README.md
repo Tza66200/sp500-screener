@@ -1,8 +1,19 @@
 # Screener S&P 500 — position trading sur 12 à 18 mois
 
-Classement quantitatif des actions du S&P 500 (croissance, momentum, qualité, valorisation,
-risque), portefeuille modèle de 20 lignes et backtest honnête, publiés sur un site web
-actualisé chaque soir par GitHub Actions. Aucun serveur à maintenir, aucun coût.
+Classement quantitatif des actions du S&P 500, portefeuille modèle de 20 lignes et backtest
+honnête, publiés sur un site web actualisé chaque soir par GitHub Actions. Aucun serveur à
+maintenir, aucun coût.
+
+Deux modèles coexistent (sélecteur en haut du site) :
+
+| Modèle | Statut | Pondérations |
+|---|---|---|
+| V1 hybride | figée le 16/10/2026 avant tout test | croissance 25, momentum 25, qualité 20, valorisation 15, risque 15 |
+| V2 littérature | enregistrée le 16/10/2026 à 13 h 15, après lecture des résultats de V1 | résultats 20, momentum 35, qualité 25, valorisation 10, risque 10 |
+
+V2 a été conçue en connaissant les résultats de 2011-2020 : seule la période réservée
+(depuis 2021) et le suivi réel peuvent la valider. Les deux modèles seront jugés ensemble,
+une seule fois, à la révélation de cette période.
 
 Outil d'aide à la décision : ce n'est ni un conseil en investissement, ni un système d'ordres.
 

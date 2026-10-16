@@ -147,3 +147,52 @@ def test_material_interest_means_debt_unknown(concepts):
     comp = F.Company(pd.concat([facts, pd.DataFrame(rows)], ignore_index=True), concepts)
     st = comp.state(d("2022-02-21"))      # 30 d'intérêts pour ~1 033 d'actifs
     assert st["debt"] is None
+
+
+def test_divestiture_restatement_dollar_tree_case(concepts):
+    """Cession d'une activité : l'exercice est republié sans elle, mais les 9 premiers mois
+    l'incluaient encore. Avant correction, le T4 reconstitué était négatif et la croissance
+    absurde."""
+    rows = []
+    for y in (2020, 2021):
+        for qi, (s, e, filed) in enumerate([("01-01", "03-31", "05-05"), ("04-01", "06-30", "08-05"),
+                                            ("07-01", "09-30", "11-05")]):
+            rows.append(fact("revenue", "Revenues", f"{y}-{s}", f"{y}-{e}", 100, f"{y}-{filed}"))
+        rows.append(fact("revenue", "Revenues", f"{y}-01-01", f"{y}-09-30", 300, f"{y}-11-05"))
+    rows.append(fact("revenue", "Revenues", "2020-01-01", "2020-12-31", 400, "2021-02-20", "10-K"))
+    # 10-K 2021 : activité cédée retirée, 2020 republié sur la même base
+    rows.append(fact("revenue", "Revenues", "2021-01-01", "2021-12-31", 240, "2022-02-20", "10-K"))
+    rows.append(fact("revenue", "Revenues", "2020-01-01", "2020-12-31", 240, "2022-02-20", "10-K"))
+    # 10-Q T1 2022 : comparatif T1 2021 republié
+    rows.append(fact("revenue", "Revenues", "2022-01-01", "2022-03-31", 63, "2022-05-05"))
+    rows.append(fact("revenue", "Revenues", "2021-01-01", "2021-03-31", 60, "2022-05-05"))
+    comp = F.Company(pd.DataFrame(rows), concepts)
+    q = F.build_quarters(F.first_filed(pd.DataFrame(rows)), nonneg=True)
+    assert (q["val"] >= 0).all()                          # T4 2021 négatif écarté
+    st = comp.state(d("2022-05-06"))
+    assert st["revenue_ttm"] == pytest.approx(240)
+    assert st["revenue_ttm_prev"] == pytest.approx(240)   # 2020 republié, même base
+    # Avant la republication, l'état utilise les chiffres connus alors (pas d'anticipation)
+    st0 = comp.state(d("2021-03-01"))
+    assert st0["revenue_ttm"] == pytest.approx(400)
+
+
+def test_sue_standardized_surprise(concepts):
+    rows = []
+    vals = {}
+    k = 0
+    for y in range(2018, 2022):
+        for qi, (s, e, filed) in enumerate([("01-01", "03-31", "05-05"), ("04-01", "06-30", "08-05"),
+                                            ("07-01", "09-30", "11-05"), ("10-01", "12-31", "02-20")]):
+            v = 10 + k + (k * k) % 7
+            vals[(y, qi)] = v
+            fy = y + 1 if qi == 3 else y
+            rows.append(fact("net_income", "NetIncomeLoss", f"{y}-{s}", f"{y}-{e}", v, f"{fy}-{filed}"))
+            k += 1
+    comp = F.Company(pd.DataFrame(rows), concepts)
+    sue, q = comp.sue(d("2022-03-01"))
+    changes = [vals[(y, qi)] - vals[(y - 1, qi)] for y in (2019, 2020, 2021) for qi in range(4)]
+    hist = changes[-9:-1]
+    expected = changes[-1] / np.std(hist, ddof=1)
+    assert q == pd.Timestamp("2021-12-31")
+    assert sue == pytest.approx(expected)

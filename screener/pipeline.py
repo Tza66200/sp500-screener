@@ -118,20 +118,63 @@ def collect(settings: dict, concepts: dict, offline: bool) -> dict:
     return {"current": current, "history": history, "info": info, "status": status}
 
 
+STATES_VERSION = "3"   # à incrémenter quand le calcul des fondamentaux change
+
+
+def _states_one(args):
+    cik, concepts = args
+    facts = SEC.load_facts(cik)
+    if facts is None or facts.empty:
+        return cik, None, None
+    try:
+        st = FD.company_states(facts, concepts)
+    except Exception as exc:  # noqa: BLE001
+        return cik, None, str(exc)
+    st.insert(0, "cik", cik)
+    return cik, st, None
+
+
 def build_states(info: pd.DataFrame, concepts: dict) -> pd.DataFrame:
+    """États fondamentaux par société, recalculés seulement si les faits SEC ont changé
+    (ou si le calcul lui-même a changé). Calcul parallèle sur tous les cœurs."""
+    import hashlib
+    import os
+    from concurrent.futures import ProcessPoolExecutor
+
     t0 = time.time()
-    frames = []
-    for cik in sorted({int(c) for c in info["cik"].dropna()}):
-        facts = SEC.load_facts(cik)
-        if facts is None or facts.empty:
+    cache_dir = C.DATA_DIR / "states"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    index_path = cache_dir / "index.json"
+    index = json.loads(index_path.read_text()) if index_path.exists() else {}
+    version = STATES_VERSION + "-" + hashlib.sha1(
+        json.dumps(concepts, sort_keys=True).encode()).hexdigest()[:10]
+    ciks = sorted({int(c) for c in info["cik"].dropna()})
+    todo, frames = [], []
+    for cik in ciks:
+        fp = C.DATA_DIR / "sec" / "facts" / f"{cik}.parquet"
+        if not fp.exists():
             continue
-        try:
-            st = FD.company_states(facts, concepts)
-        except Exception as exc:  # noqa: BLE001
-            log.warning("États fondamentaux CIK %s : %s", cik, exc)
-            continue
-        st.insert(0, "cik", cik)
-        frames.append(st)
+        key = f"{version}:{fp.stat().st_size}:{fp.stat().st_mtime_ns}"
+        cp = cache_dir / f"{cik}.parquet"
+        if index.get(str(cik)) == key and cp.exists():
+            frames.append(pd.read_parquet(cp))
+        else:
+            todo.append((cik, key))
+    log.info("États fondamentaux : %d sociétés à recalculer, %d en cache", len(todo), len(frames))
+    keys = dict(todo)
+    workers = max(1, (os.cpu_count() or 2))
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        for cik, st, err in pool.map(_states_one, [(c, concepts) for c, _ in todo], chunksize=4):
+            if err:
+                log.warning("États fondamentaux CIK %s : %s", cik, err)
+                continue
+            if st is None:
+                continue
+            st.to_parquet(cache_dir / f"{cik}.parquet", index=False)
+            index[str(cik)] = keys[cik]
+            frames.append(st)
+    index_path.write_text(json.dumps(index))
+    frames = [f for f in frames if len(f)]
     states = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(
         columns=["cik"] + FD.STATE_COLUMNS)
     states["usable_date"] = states["known_date"] + BDay(1)
@@ -189,11 +232,12 @@ def vetoes_at(vetoes: list[dict], when: pd.Timestamp) -> dict:
 def panel_frame(ctx: FT.Context, when: pd.Timestamp, settings: dict, vetoes: list[dict]
                 ) -> pd.DataFrame:
     feats = FT.compute(ctx, when, live=False)
-    scored = S.score(feats, settings["weights"], settings)
+    scored = S.score(feats, settings)
     filt = S.apply_filters(scored, settings, vetoes=vetoes_at(vetoes, when))
-    out = filt[["sector", *C.FACTORS, "composite", "above_sma200"]].copy()
+    comps = [f"composite_{m}" for m in settings["models"]]
+    out = filt[["sector", *C.FACTORS, *comps, "above_sma200"]].copy()
     out["scorable"] = scored["reasons"].map(len) == 0
-    out["eligible_base"] = filt["eligible"]
+    out["eligible_base"] = filt["eligible_base"]
     return out
 
 
@@ -264,19 +308,25 @@ def run(offline: bool = False) -> None:
     if dropped:
         log.info("Symboles réattribués écartés : %s", ", ".join(dropped))
 
+    earn = {float(c): SEC.earnings_dates(int(c)) for c in info["cik"].dropna().unique()}
+    log.info("Communiqués de résultats : %d dates pour %d sociétés",
+             sum(len(v) for v in earn.values()), sum(1 for v in earn.values() if v))
     ctx = FT.Context(prices=prices, states=states, info=info, history=history, current=current,
-                     excluded_sectors=settings["universe"]["excluded_sectors"])
+                     excluded_sectors=settings["universe"]["excluded_sectors"], earnings=earn,
+                     market=settings["backtest"]["benchmarks"]["equal_weight"])
     cal = ctx.calendar
     today = cal[-1]
 
     # Classement courant (membres actuels, OPA et vetos)
     live_feats = FT.compute(ctx, today, live=True)
-    live_scored = S.score(live_feats, settings["weights"], settings)
+    live_scored = S.score(live_feats, settings)
     merger = merger_flags(info.reindex(live_scored.index), today, settings)
     live_vetoes = vetoes_at(vetoes, today)
     live = S.apply_filters(live_scored, settings, merger=merger, vetoes=live_vetoes)
-    live["reason_text"] = [S.reason_text(r, merger, live_vetoes, t)
-                           for t, r in zip(live.index, live["reasons"])]
+    for m in settings["models"]:
+        live[f"reason_text_{m}"] = [S.reason_text(r, merger, live_vetoes, t)
+                                    for t, r in zip(live.index, live[f"reasons_{m}"])]
+    live["reason_text"] = live[f"reason_text_{settings['default_model']}"]
     # Rapport déposé mais pas encore intégré aux données XBRL de la SEC : on le signale.
     pending = 0
     for t, c in live["cik"].items():
@@ -295,7 +345,8 @@ def run(offline: bool = False) -> None:
     ed = {t: earnings_dates(c, today) for t, c in live["cik"].items()}
     live["last_earnings"] = [ed[t][0] for t in live.index]
     live["next_earnings_est"] = [ed[t][1] for t in live.index]
-    log.info("Classement du %s : %d éligibles sur %d", today.date(), int(live["eligible"].sum()),
+    log.info("Classement du %s : %s sur %d", today.date(),
+             ", ".join(f"{m} {int(live[f'eligible_{m}'].sum())} éligibles" for m in settings["models"]),
              len(live))
 
     # Scores historiques
@@ -322,25 +373,39 @@ def run(offline: bool = False) -> None:
 
     runs: dict[str, B.Result] = {}
     groups = {"variants": protocol["variants"], "robustness": protocol.get("robustness", {})}
-    for group, specs in groups.items():
-        for name, overrides in specs.items():
-            params = C.portfolio_params(settings, overrides)
-            revs = [r for r in review_dates(cal[:-1], params["review_months"],
-                                            params["review_day"], valid_start) if r in panel]
-            runs[name] = B.run(name, panel, adj, params, revs, settings["scoring"]["min_factors"])
-            log.info("Backtest %s : %d revues", name, len(revs))
+    models = protocol["models"]
+    for model in models:
+        for group, specs in groups.items():
+            for name, overrides in specs.items():
+                params = C.portfolio_params(settings, overrides, model)
+                revs = [r for r in review_dates(cal[:-1], params["review_months"],
+                                                params["review_day"], valid_start) if r in panel]
+                runs[f"{model}:{name}"] = B.run(f"{model}:{name}", panel, adj, params, revs,
+                                                settings["scoring"]["min_factors"])
+        log.info("Backtests %s : %d revues pour la référence", model,
+                 len(runs[f"{model}:reference"].reviews))
 
     ic_end = today if protocol["holdout"]["revealed"] else pd.Timestamp(protocol["design_period"]["end"])
     ic_panel = {d: df for d, df in panel.items() if d in set(month_ends(cal, valid_start))}
-    ic_obs = IC.ic_observations(ic_panel, adj, protocol["ic_horizons_months"], ic_end)
+    ic_obs = IC.ic_observations(ic_panel, adj, protocol["ic_horizons_months"], ic_end,
+                                columns=C.FACTORS + [f"composite_{m}" for m in models])
+    success = {m: IC.success_rates(ic_panel, adj, C.model_weights(settings, m),
+                                   settings["scoring"]["min_factors"],
+                                   protocol["success_horizons_months"], ic_end,
+                                   protocol["success_top_n"]) for m in models}
 
-    # Portefeuille modèle courant et revue hypothétique aujourd'hui
-    ref = runs["reference"]
-    ref_params = C.portfolio_params(settings, protocol["variants"]["reference"])
-    held = {t: h["bought_review"] for t, h in ref.holdings.items()}
-    hypo = review_decision(live[["eligible", "rank", "sector"]], held, ref_params,
-                           len(ref.reviews))
-    nrev = next_review(today, ref_params["review_months"], ref_params["review_day"])
+    # Portefeuille modèle courant et revue hypothétique aujourd'hui, par modèle
+    portfolios = {}
+    for model in models:
+        ref = runs[f"{model}:reference"]
+        ref_params = C.portfolio_params(settings, protocol["variants"]["reference"], model)
+        held = {t: h["bought_review"] for t, h in ref.holdings.items()}
+        view = live[[f"eligible_{model}", f"rank_{model}", "sector"]].rename(
+            columns={f"eligible_{model}": "eligible", f"rank_{model}": "rank"})
+        hypo = review_decision(view, held, ref_params, len(ref.reviews))
+        portfolios[model] = {"result": ref, "hypo": hypo, "params": ref_params}
+    nrev = next_review(today, settings["portfolio"]["review_months"],
+                       settings["portfolio"]["review_day"])
 
     audit = A.build(info=info, prices=prices, history=history, live=live, states=states,
                     elig_counts=elig_counts, status=status, dropped=dropped,
@@ -348,9 +413,9 @@ def run(offline: bool = False) -> None:
     R.dump("diagnostics.json", A.diagnostics(
         live, SEC.load_tags, set(settings["universe"]["excluded_sectors"])))
     R.write_all(settings=settings, protocol=protocol, live=live, runs=runs, groups=groups,
-                bench=bench_series, rf_daily=rf_daily, ic_obs=ic_obs, audit=audit,
-                status=status, hypo=hypo, next_review_date=nrev, today=today,
-                valid_start=valid_start, prices=prices, panel_dates=len(panel))
+                bench=bench_series, rf_daily=rf_daily, ic_obs=ic_obs, success=success,
+                audit=audit, status=status, portfolios=portfolios, next_review_date=nrev,
+                today=today, valid_start=valid_start, prices=prices, panel_dates=len(panel))
     log.info("Terminé.")
 
 

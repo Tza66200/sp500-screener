@@ -49,29 +49,34 @@ def test_factor_needs_half_of_its_metrics_and_composite_needs_four_factors():
     f.loc["T00", ["rev_growth", "rev_accel"]] = np.nan          # croissance : 1/3 -> absent
     f.loc["T01", ["rev_growth", "rev_accel", "oi_change_assets"]] = np.nan
     f.loc["T01", ["fcf_yield", "ebit_ev"]] = np.nan              # 2 facteurs absents
-    out = S.score(f, st["weights"], st)
+    out = S.score(f, st)
     assert np.isnan(out.at["T00", "growth"])
-    assert not np.isnan(out.at["T00", "composite"])              # 4 facteurs sur 5
-    assert np.isnan(out.at["T01", "composite"])                  # 3 facteurs sur 5
+    assert not np.isnan(out.at["T00", "composite_v1"])           # 4 facteurs V1 sur 5
+    assert np.isnan(out.at["T01", "composite_v1"])               # 3 facteurs V1 sur 5
+    # V2 n'utilise pas la croissance : T01 n'a perdu qu'un de ses facteurs
+    assert not np.isnan(out.at["T01", "composite_v2"])
 
 
-def test_composite_is_weighted_average():
+def test_composite_is_weighted_average_for_each_model():
     st = config.settings()
     f = frame()
-    out = S.score(f, st["weights"], st)
+    out = S.score(f, st)
     row = out.loc["T05"]
-    expected = sum(row[k] * w for k, w in st["weights"].items())
-    assert row["composite"] == pytest.approx(expected)
+    for model in ("v1", "v2"):
+        w = config.model_weights(st, model)
+        expected = sum(row[k] * v for k, v in w.items() if v > 0)
+        assert row[f"composite_{model}"] == pytest.approx(expected)
+    assert row["composite"] == row[f"composite_{st['default_model']}"]
 
 
 def test_excluded_sector_is_not_scored_and_does_not_affect_others():
     st = config.settings()
     f = frame()
-    base = S.score(f, st["weights"], st)
+    base = S.score(f, st)
     f2 = f.copy()
     f2.loc["T03", "sector"] = "Financials"
     f2.loc["T03", "mom_12_1"] = 1e9
-    out = S.score(f2, st["weights"], st)
+    out = S.score(f2, st)
     assert "sector" in out.at["T03", "reasons"]
     assert np.isnan(out.at["T03", "composite"])
     assert out.drop("T03")["pct_mom_12_1"].max() <= 100
@@ -82,7 +87,7 @@ def test_duplicate_share_classes_keep_most_liquid():
     f = frame()
     f.loc["T02", "cik"] = f.at["T01", "cik"]
     f.loc["T02", "dollar_vol_63"] = 2e8
-    out = S.score(f, st["weights"], st)
+    out = S.score(f, st)
     assert "duplicate" in out.at["T01", "reasons"]
     assert out.at["T02", "reasons"] == []
 
@@ -93,7 +98,7 @@ def test_filters_and_rank():
     f.loc["T04", "fundamentals_age_days"] = 400
     f.loc["T06", "dollar_vol_63"] = 1e6
     f.loc["T07", "above_sma200"] = False
-    out = S.apply_filters(S.score(f, st["weights"], st), st, trend_filter=True,
+    out = S.apply_filters(S.score(f, st), st, trend_filter=True,
                           merger={"T08": "DEFM14A du 2026-09-01"}, vetoes={"T09": "test"})
     assert out.at["T04", "reasons"] == ["stale"]
     assert out.at["T06", "reasons"] == ["liquidity"]
@@ -102,6 +107,7 @@ def test_filters_and_rank():
     assert out.at["T09", "reasons"] == ["veto"]
     elig = out[out["eligible"]]
     assert len(elig) == 25
+    assert out["eligible_v1"].sum() == 25 and out["rank_v1"].min() == 1
     best = elig["composite"].idxmax()
     assert out.at[best, "rank"] == 1
     txt = S.reason_text(["merger"], merger={"T08": "DEFM14A du 2026-09-01"}, ticker="T08")

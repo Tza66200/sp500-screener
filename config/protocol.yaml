@@ -18,17 +18,23 @@ holdout:
   start: "2021-01-01"
   revealed: false           # passer à true UNE SEULE FOIS, quand le modèle est figé
 
-# Variantes comparées à la référence (au plus trois)
+# Modèles évalués (pondérations dans settings.yaml). V1 figée le 16/10/2026 avant tout
+# test ; V2 enregistrée le 16/10/2026 à 13 h 15 après lecture des résultats de V1 sur
+# 2011-2020 : ses résultats sur cette période ne valent pas validation.
+models: [v1, v2]
+
+# Variantes comparées à la référence de chaque modèle (au plus trois)
+# "equal" = poids égaux entre les facteurs utilisés par le modèle
 variants:
   reference: {}
   equal_weights:
-    weights: {growth: 0.20, momentum: 0.20, quality: 0.20, value: 0.20, risk: 0.20}
+    weights: equal
   trend_filter:
     trend_filter: true
   fixed_12m:
     holding: fixed_12m
 
-# Tests de robustesse appliqués à la référence
+# Tests de robustesse appliqués à la référence de chaque modèle
 robustness:
   review_shift_1m:
     review_months: [4, 6, 9, 12]
@@ -37,11 +43,17 @@ robustness:
   positions_30:
     n_positions: 30
   weights_a:
-    weights: {growth: 0.30, momentum: 0.25, quality: 0.20, value: 0.10, risk: 0.15}
+    weights:
+      v1: {growth: 0.30, momentum: 0.25, quality: 0.20, value: 0.10, risk: 0.15}
+      v2: {earnings: 0.25, momentum: 0.30, quality: 0.25, value: 0.10, risk: 0.10}
   weights_b:
-    weights: {growth: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
+    weights:
+      v1: {growth: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
+      v2: {earnings: 0.20, momentum: 0.35, quality: 0.20, value: 0.15, risk: 0.10}
 
 ic_horizons_months: [1, 3, 6, 12, 18]
+success_horizons_months: [12, 18]
+success_top_n: 20
 
 # Critères de réussite fixés d'avance
 criteria:
@@ -53,3 +65,7 @@ criteria:
   robustness_same_sign: >
     Surperformance nette face à l'équipondéré de même signe que la référence
     pour au moins 4 des 5 tests de robustesse.
+  # Ajouté le 16/10/2026 à 13 h 15 (après lecture des résultats de V1 sur 2011-2020)
+  top20_beats_base_rate_12m: >
+    Les 20 premiers titres battent la moyenne équipondérée de l'univers éligible à
+    12 mois plus souvent que le taux de base (part des titres de l'univers qui la battent).

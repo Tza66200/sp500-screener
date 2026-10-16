@@ -263,7 +263,7 @@ class Company:
                 t = sub[sub["tag"] == tag]
                 if t.empty:
                     continue
-                if spec["kind"] == "instant":
+                if spec["kind"] in ("instant", "evidence"):
                     inst = build_instants(t)
                     if len(inst):
                         per_tag.append((rank, tag, inst))
@@ -276,9 +276,9 @@ class Company:
             # Série fusionnée : les sociétés changent parfois d'étiquette d'une année à
             # l'autre. Pour chaque date de fin, l'étiquette prioritaire l'emporte.
             merged = _merge(per_tag)
-            target = self.instants if spec["kind"] == "instant" else self.quarters
+            target = self.instants if spec["kind"] in ("instant", "evidence") else self.quarters
             target[concept] = [(MERGED, Series(merged))] + [(tg, Series(x)) for _, tg, x in per_tag]
-            if spec["kind"] != "instant" and concept not in NON_ADDITIVE:
+            if spec["kind"] == "duration" and concept not in NON_ADDITIVE:
                 # Exercices complets : un chiffre annuel est aussi un 12 mois glissants.
                 # Il sert quand un rapport trimestriel manque dans les données XBRL.
                 annual = {tg: build_annuals(sub[sub["tag"] == tg]) for _, tg, _ in per_tag}
@@ -355,6 +355,28 @@ class Company:
             if j is not None:
                 return s.val[j], tag
         return None, None
+
+    def instant_recent(self, concept, bs_end, d, max_age=200):
+        """Dernière valeur connue à d, datée au plus `max_age` jours avant le bilan."""
+        lst = self.instants.get(concept) or []
+        if not lst:
+            return None, None
+        s = lst[0][1]          # série fusionnée
+        ok = (s.avail <= d) & (s.end <= bs_end) & \
+            ((bs_end - s.end).astype(int) <= max_age)
+        idx = np.nonzero(ok)[0]
+        if not len(idx):
+            return None, None
+        j = int(idx[np.argmax(s.end[idx])])
+        return s.val[j], s.end[j]
+
+    def has_debt_evidence(self, d, years=2):
+        lst = self.instants.get("debt_flows") or []
+        if not lst:
+            return False
+        s = lst[0][1]
+        ok = (s.avail <= d) & (s.end >= d - np.timedelta64(365 * years, "D")) & (s.val > 0)
+        return bool(ok.any())
 
     # -- état à une date --------------------------------------------------------
     def state(self, d: np.datetime64) -> dict:
@@ -439,12 +461,27 @@ class Company:
             dnc, _ = self.instant_at("debt_noncurrent", bs_end, d)
             dc, _ = self.instant_at("debt_current", bs_end, d)
             stb, _ = self.instant_at("short_term_borrowings", bs_end, d)
+            if dtl is None and dnc is None:
+                # Certaines sociétés ne détaillent la dette à long terme qu'une fois par an :
+                # on reprend le dernier montant publié (au plus 200 jours avant le bilan).
+                v, when = self.instant_recent("debt_total_lt", bs_end, d)
+                if v is None:
+                    v2, when = self.instant_recent("debt_noncurrent", bs_end, d)
+                    if v2 is not None:
+                        dnc = v2
+                else:
+                    dtl = v
+                if when is not None:
+                    flags.append(f"Dette à long terme : dernier montant publié ({pd.Timestamp(when).date()})")
             if dtl is not None:
                 debt = dtl + (stb or 0.0)
             elif dnc is not None or dc is not None:
                 debt = (dnc or 0.0) + (dc or 0.0) + (stb or 0.0)
             elif stb is not None:
                 debt = stb
+            elif self.has_debt_evidence(d):
+                debt = None
+                flags.append("Dette introuvable dans les données XBRL (inconnue)")
             else:
                 debt = 0.0
                 flags.append("Aucune dette déclarée : supposée nulle")

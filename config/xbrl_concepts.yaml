@@ -70,6 +70,7 @@ capex:
     - PaymentsToAcquireOilAndGasPropertyAndEquipment
     - PaymentsToAcquireOilAndGasProperty
     - PaymentsToAcquireOtherPropertyPlantAndEquipment
+    - PaymentsToAcquireOtherProductiveAssets
 
 dna:
   kind: duration
@@ -108,12 +109,20 @@ debt_total_lt:
   tags:
     - LongTermDebt
     - LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities
+    - DebtLongtermAndShorttermCombinedAmount
+    - DebtAndCapitalLeaseObligations
+    - NotesPayable
 
 debt_noncurrent:
   kind: instant
   tags:
     - LongTermDebtNoncurrent
     - LongTermDebtAndCapitalLeaseObligations
+    - LongTermNotesPayable
+    - UnsecuredLongTermDebt
+    - ConvertibleDebtNoncurrent
+    - SeniorLongTermNotes
+    - OtherLongTermDebtNoncurrent
 
 debt_current:
   kind: instant
@@ -121,12 +130,32 @@ debt_current:
     - LongTermDebtCurrent
     - LongTermDebtAndCapitalLeaseObligationsCurrent
     - DebtCurrent
+    - NotesPayableCurrent
 
 short_term_borrowings:
   kind: instant
   tags:
     - ShortTermBorrowings
     - CommercialPaper
+
+# Indices qu'une dette existe (flux de remboursement ou d'émission). Si aucune dette
+# n'est trouvée au bilan mais que ces flux existent, la dette est inconnue (et non nulle).
+debt_flows:
+  kind: evidence
+  tags:
+    - RepaymentsOfLongTermDebt
+    - ProceedsFromIssuanceOfLongTermDebt
+    - RepaymentsOfDebt
+    - ProceedsFromIssuanceOfDebt
+    - RepaymentsOfSeniorDebt
+    - ProceedsFromIssuanceOfSeniorLongTermDebt
+    - RepaymentsOfNotesPayable
+    - ProceedsFromNotesPayable
+    - RepaymentsOfDebtMaturingInMoreThanThreeMonths
+    - ProceedsFromDebtMaturingInMoreThanThreeMonths
+    - RepaymentsOfLongTermDebtAndCapitalSecurities
+    - ProceedsFromIssuanceOfLongTermDebtAndCapitalSecuritiesNet
+    - RepaymentsOfDebtAndCapitalLeaseObligations
 
 shares_outstanding:
   kind: instant

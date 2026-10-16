@@ -148,7 +148,7 @@ def fundamental_features(ctx: Context, frame: pd.DataFrame, when: pd.Timestamp) 
     f["market_cap"] = f["price"] * f["shares"] * factor
     mcap = f["market_cap"].where(f["market_cap"] > 0)
     f["fcf_yield"] = (f["cfo_ttm"] - f["capex_ttm"]) / mcap
-    ev = mcap + f["debt"].fillna(0) - f["cash"].fillna(0)
+    ev = mcap + f["debt"] - f["cash"].fillna(0)      # dette inconnue -> VE inconnue
     f["enterprise_value"] = ev
     f["ebit_ev"] = (f["oi_ttm"] / ev).where(ev > 0)
     f["fundamentals_age_days"] = (pd.Timestamp(when) - f["known_date"]).dt.days

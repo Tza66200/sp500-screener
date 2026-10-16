@@ -116,3 +116,23 @@ def test_annual_used_when_a_quarterly_report_is_missing(concepts):
     assert st["quarter_end"] == pd.Timestamp("2021-12-31")
     assert st["revenue_ttm"] == pytest.approx(sum(121 + i for i in range(4)))
     assert st["revenue_ttm_prev"] == pytest.approx(sum(110 + i for i in range(4)))
+
+
+def test_debt_unknown_when_repayments_exist(concepts):
+    facts = synthetic_company()
+    extra = pd.DataFrame([fact("debt_flows", "RepaymentsOfLongTermDebt", "2021-01-01",
+                               "2021-06-30", 40, "2021-08-05")])
+    comp = F.Company(pd.concat([facts, extra], ignore_index=True), concepts)
+    st = comp.state(d("2021-11-06"))
+    assert st["debt"] is None
+    assert "inconnue" in st["flags"]
+
+
+def test_annual_long_term_debt_carried_forward(concepts):
+    facts = synthetic_company()
+    extra = pd.DataFrame([fact("debt_total_lt", "LongTermDebt", None, "2020-12-31", 500,
+                               "2021-02-20", "10-K")])
+    comp = F.Company(pd.concat([facts, extra], ignore_index=True), concepts)
+    st = comp.state(d("2021-08-06"))          # bilan au 30/06/2021, dette connue au 31/12/2020
+    assert st["debt"] == 500
+    assert "dernier montant publié" in st["flags"]

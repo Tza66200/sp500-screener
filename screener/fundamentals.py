@@ -156,6 +156,30 @@ def build_ttm(q: pd.DataFrame) -> pd.DataFrame:
                          "val": [r[2] for r in rows], "avail": _from_days([r[3] for r in rows])})
 
 
+def build_annuals(f: pd.DataFrame) -> pd.DataFrame:
+    """Exercices complets (340 à 390 jours), première valeur publiée."""
+    cols = ["start", "end", "val", "avail"]
+    f = f.dropna(subset=["start"])
+    if f.empty:
+        return pd.DataFrame(columns=cols)
+    days = (f["end"] - f["start"]).dt.days + 1
+    a = f[(days >= Y_RANGE[0]) & (days <= Y_RANGE[1])]
+    a = a.sort_values("filed", kind="mergesort").drop_duplicates("end", keep="first")
+    return pd.DataFrame({"start": a["start"].values, "end": a["end"].values,
+                         "val": a["val"].astype(float).values,
+                         "avail": a["filed"].values}).sort_values("end").reset_index(drop=True)
+
+
+def _with_annuals(ttm: pd.DataFrame, annual: pd.DataFrame) -> pd.DataFrame:
+    """Ajoute les exercices dont la date de fin n'a pas de 12 mois glissants trimestriel ;
+    à date de fin égale, garde la version disponible la plus tôt."""
+    if annual is None or not len(annual):
+        return ttm
+    both = pd.concat([ttm, annual[["start", "end", "val", "avail"]]], ignore_index=True)
+    both = both.sort_values(["end", "avail"], kind="mergesort")
+    return both.drop_duplicates("end", keep="first").reset_index(drop=True)
+
+
 def build_instants(f: pd.DataFrame) -> pd.DataFrame:
     f = f.sort_values(["filed"], kind="mergesort").drop_duplicates("end", keep="first")
     return pd.DataFrame({"end": f["end"].values, "val": f["val"].astype(float).values,
@@ -188,6 +212,7 @@ class Series:
         self.start = df["start"].values.astype("datetime64[D]") if "start" in df else None
         self.val = df["val"].values.astype(float)
         self.avail = df["avail"].values.astype("datetime64[D]")
+        self.tags = df["tag"].values if "tag" in df else None
 
     def __len__(self) -> int:
         return len(self.end)
@@ -204,6 +229,22 @@ class Series:
         return int(idx[np.argmin(np.abs((self.end[idx] - target).astype(int)))])
 
 
+MERGED = "fusion"
+
+
+def _merge(per_tag: list[tuple[int, str, pd.DataFrame]]) -> pd.DataFrame:
+    frames = []
+    for rank, tag, df in per_tag:
+        d = df.copy()
+        d["_rank"] = rank
+        d["tag"] = tag
+        frames.append(d)
+    allq = pd.concat(frames, ignore_index=True)
+    sort = ["end", "_rank"] + (["derived"] if "derived" in allq else [])
+    allq = allq.sort_values(sort, kind="mergesort").drop_duplicates("end", keep="first")
+    return allq.drop(columns="_rank").reset_index(drop=True)
+
+
 class Company:
     def __init__(self, facts: pd.DataFrame, concepts: dict):
         self.concepts = concepts
@@ -217,22 +258,41 @@ class Company:
         ff = first_filed(facts)
         for concept, spec in concepts.items():
             sub = ff[ff["concept"] == concept]
-            for tag in spec["tags"]:
+            per_tag = []
+            for rank, tag in enumerate(spec["tags"]):
                 t = sub[sub["tag"] == tag]
                 if t.empty:
                     continue
                 if spec["kind"] == "instant":
                     inst = build_instants(t)
                     if len(inst):
-                        self.instants.setdefault(concept, []).append((tag, Series(inst)))
+                        per_tag.append((rank, tag, inst))
                 else:
                     q = build_quarters(t, additive=concept not in NON_ADDITIVE)
                     if len(q):
-                        self.quarters.setdefault(concept, []).append((tag, Series(q)))
-                        if concept not in NON_ADDITIVE:
-                            ttm = build_ttm(q)
-                            if len(ttm):
-                                self.ttm.setdefault(concept, []).append((tag, Series(ttm)))
+                        per_tag.append((rank, tag, q))
+            if not per_tag:
+                continue
+            # Série fusionnée : les sociétés changent parfois d'étiquette d'une année à
+            # l'autre. Pour chaque date de fin, l'étiquette prioritaire l'emporte.
+            merged = _merge(per_tag)
+            target = self.instants if spec["kind"] == "instant" else self.quarters
+            target[concept] = [(MERGED, Series(merged))] + [(tg, Series(x)) for _, tg, x in per_tag]
+            if spec["kind"] != "instant" and concept not in NON_ADDITIVE:
+                # Exercices complets : un chiffre annuel est aussi un 12 mois glissants.
+                # Il sert quand un rapport trimestriel manque dans les données XBRL.
+                annual = {tg: build_annuals(sub[sub["tag"] == tg]) for _, tg, _ in per_tag}
+                ann_merged = _merge([(rk, tg, annual[tg]) for rk, tg, _ in per_tag
+                                     if len(annual[tg])]) if any(len(a) for a in annual.values()) \
+                    else pd.DataFrame(columns=["start", "end", "val", "avail"])
+                lists = []
+                for tg, x, a in [(MERGED, merged, ann_merged)] + \
+                        [(tg, x, annual[tg]) for _, tg, x in per_tag]:
+                    ttm = _with_annuals(build_ttm(x), a)
+                    if len(ttm):
+                        lists.append((tg, Series(ttm)))
+                if lists:
+                    self.ttm[concept] = lists
         self.event_dates = sorted(pd.to_datetime(ff["filed"]).dt.normalize().unique())
 
     # -- sélection d'étiquettes -------------------------------------------------
@@ -326,6 +386,10 @@ class Company:
             out["revenue_q_yoy"] = g0
             out["revenue_q_yoy_prev"] = g1
             out["revenue_tag"] = tag
+            mq = dict(self.quarters.get("revenue") or []).get(MERGED)
+            if tag == MERGED and mq is not None and mq.tags is not None:
+                j = mq.near(s.end[i], d, 3)
+                out["revenue_tag"] = mq.tags[j] if j is not None else tag
 
         # Résultat opérationnel (repli : résultat avant impôts)
         oi = self.ttm_now("operating_income", d)

@@ -277,6 +277,21 @@ def run(offline: bool = False) -> None:
     live = S.apply_filters(live_scored, settings, merger=merger, vetoes=live_vetoes)
     live["reason_text"] = [S.reason_text(r, merger, live_vetoes, t)
                            for t, r in zip(live.index, live["reasons"])]
+    # Rapport déposé mais pas encore intégré aux données XBRL de la SEC : on le signale.
+    pending = 0
+    for t, c in live["cik"].items():
+        if pd.isna(c) or pd.isna(live.at[t, "known_date"]):
+            continue
+        fl = SEC.load_filings(int(c))
+        if fl is None or fl.empty:
+            continue
+        per = fl[fl["form"].isin(SEC.PERIODIC_FORMS)]["filingDate"].max()
+        if pd.notna(per) and per > live.at[t, "known_date"] + pd.Timedelta(days=2):
+            note = f"Dernier rapport pas encore intégré aux données XBRL de la SEC (déposé le {per.date()})"
+            live.at[t, "flags"] = " | ".join(
+                x for x in (live.at[t, "flags"], note) if isinstance(x, str) and x)
+            pending += 1
+    status["filings_pending_xbrl"] = pending
     ed = {t: earnings_dates(c, today) for t, c in live["cik"].items()}
     live["last_earnings"] = [ed[t][0] for t in live.index]
     live["next_earnings_est"] = [ed[t][1] for t in live.index]

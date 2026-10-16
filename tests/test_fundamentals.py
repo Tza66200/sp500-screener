@@ -92,3 +92,27 @@ def test_company_states_one_row_per_filing_date(concepts):
     assert states["known_date"].is_monotonic_increasing
     assert states["known_date"].nunique() == len(states)
     assert pd.Timestamp("2021-02-20") in set(states["known_date"])
+
+
+def test_tag_switch_is_merged(concepts):
+    facts = synthetic_company()
+    sw = (facts["tag"] == "Revenues") & (facts["end"] >= pd.Timestamp("2021-01-01"))
+    facts.loc[sw, "tag"] = "RevenueFromContractWithCustomerExcludingAssessedTax"
+    comp = F.Company(facts, concepts)
+    st = comp.state(d("2021-11-06"))
+    # TTM à fin septembre 2021 : T4 2020 (ancienne étiquette) + T1-T3 2021 (nouvelle)
+    assert st["revenue_ttm"] == pytest.approx(113 + 121 + 122 + 123)
+    assert st["revenue_q_yoy"] == pytest.approx(123 / 112 - 1)
+    assert st["revenue_tag"] == "RevenueFromContractWithCustomerExcludingAssessedTax"
+
+
+def test_annual_used_when_a_quarterly_report_is_missing(concepts):
+    facts = synthetic_company()
+    # Le 10-Q du T3 2021 manque dans les données XBRL (cas réel observé)
+    gone = (facts["filed"] == pd.Timestamp("2021-11-05"))
+    facts = facts[~gone]
+    comp = F.Company(facts, concepts)
+    st = comp.state(d("2022-02-21"))
+    assert st["quarter_end"] == pd.Timestamp("2021-12-31")
+    assert st["revenue_ttm"] == pytest.approx(sum(121 + i for i in range(4)))
+    assert st["revenue_ttm_prev"] == pytest.approx(sum(110 + i for i in range(4)))

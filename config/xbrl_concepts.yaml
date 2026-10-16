@@ -11,6 +11,8 @@ revenue:
     - SalesRevenueNet
     - SalesRevenueGoodsNet
     - SalesRevenueServicesNet
+    - RegulatedAndUnregulatedOperatingRevenue
+    - OilAndGasRevenue
 
 cost_of_revenue:
   kind: duration
@@ -35,6 +37,7 @@ pretax_income:
   tags:
     - IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest
     - IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments
+    - IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic
 
 interest_expense:
   kind: duration
@@ -64,6 +67,9 @@ capex:
     - PaymentsToAcquirePropertyPlantAndEquipment
     - PaymentsToAcquireProductiveAssets
     - PaymentsForCapitalImprovements
+    - PaymentsToAcquireOilAndGasPropertyAndEquipment
+    - PaymentsToAcquireOilAndGasProperty
+    - PaymentsToAcquireOtherPropertyPlantAndEquipment
 
 dna:
   kind: duration

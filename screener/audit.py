@@ -36,7 +36,9 @@ def build(*, info, prices, history, live, states, elig_counts, status, dropped, 
     core = live[~live["sector"].isin(excluded)]
     metric_cov = {m: float(core[m].notna().mean()) for m in METRICS if m in core}
     reason_counts = Counter(c for r in live["reasons"] for c in r)
-    flag_counts = Counter(f.strip() for s in live.get("flags", pd.Series(dtype=str)).fillna("")
+    import re
+    flag_counts = Counter(re.sub(r"\s*\(.*\)$", "", f.strip())
+                          for s in live.get("flags", pd.Series(dtype=str)).fillna("")
                           for f in str(s).split("|") if f.strip())
     return {
         "backtest_universe": {

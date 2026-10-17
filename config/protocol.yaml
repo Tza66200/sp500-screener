@@ -16,7 +16,9 @@ subperiods:
 
 holdout:
   start: "2021-01-01"
-  revealed: false           # passer à true UNE SEULE FOIS, quand le modèle est figé
+  # Révélée le 17/10/2026 à 12 h 55, une seule fois, avec V1, V2 et V3 figées.
+  # Ne plus modifier ces trois modèles en fonction de ce qui apparaît.
+  revealed: true
 
 # Modèles évalués (pondérations dans settings.yaml). V1 figée le 16/10/2026 avant tout
 # test ; V2 enregistrée le 16/10/2026 à 13 h 15 après lecture des résultats de V1 sur

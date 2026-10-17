@@ -27,6 +27,7 @@ def run_dir(tmp_path_factory):
     (cfg / "settings.yaml").write_text(yaml.safe_dump(s, allow_unicode=True))
     pr = yaml.safe_load((cfg / "protocol.yaml").read_text())
     pr["success_top_n"] = 5                 # univers fictif de ~40 titres
+    pr["holdout"]["revealed"] = False       # vérifie le masquage, quel que soit l'état réel
     (cfg / "protocol.yaml").write_text(yaml.safe_dump(pr, allow_unicode=True))
     env = {**os.environ, "SCREENER_DATA_DIR": str(data), "SCREENER_SITE_DATA_DIR": str(site),
            "SCREENER_HISTORY_DIR": str(hist), "SCREENER_CONFIG_DIR": str(cfg)}

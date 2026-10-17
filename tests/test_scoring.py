@@ -62,7 +62,7 @@ def test_composite_is_weighted_average_for_each_model():
     f = frame()
     out = S.score(f, st)
     row = out.loc["T05"]
-    for model in ("v1", "v2"):
+    for model in ("v1", "v2", "v3"):
         w = config.model_weights(st, model)
         expected = sum(row[k] * v for k, v in w.items() if v > 0)
         assert row[f"composite_{model}"] == pytest.approx(expected)

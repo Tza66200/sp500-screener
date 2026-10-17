@@ -3,7 +3,7 @@
 # (commit Git avec justification) et ne doit pas être guidée par les résultats
 # de la période réservée (voir protocol.yaml).
 
-model_version: "2026-10-16"
+model_version: "2026-10-17"
 
 universe:
   # V1 : banques, assureurs et immobilier exclus (métriques EV/EBITDA, FCF, ROIC inadaptées).
@@ -11,12 +11,15 @@ universe:
   min_dollar_volume_usd: 20000000      # volume moyen en dollars sur 63 séances
   max_fundamentals_age_days: 183       # dernier 10-K/10-Q disponible depuis plus de 6 mois -> exclu
 
-# Deux modèles, évalués ensemble selon config/protocol.yaml.
+# Trois modèles, évalués ensemble selon config/protocol.yaml.
 # V1 : pondérations fixées le 16/10/2026 au matin, avant tout test. Figée.
 # V2 : enregistrée le 16/10/2026 à 13 h 15, APRÈS avoir vu les résultats de V1 sur
 #      2011-2020. Ses pondérations viennent de la littérature (momentum, rentabilité brute,
 #      surprise de résultats), pas d'une optimisation. Sa validation ne peut donc venir que
 #      de la période réservée (2021 à aujourd'hui) et du suivi en conditions réelles.
+# V3 : enregistrée le 17/10/2026 à 8 h 46 à la demande de l'utilisateur, orientée « gain avec
+#      risque maîtrisé ». Conçue elle aussi après lecture des résultats de V1 et V2 sur
+#      2011-2020 (où le facteur risque était le meilleur) : même réserve que pour V2.
 models:
   v1:
     label: "V1 hybride"
@@ -24,7 +27,10 @@ models:
   v2:
     label: "V2 littérature"
     weights: {growth: 0.0, earnings: 0.20, momentum: 0.35, quality: 0.25, value: 0.10, risk: 0.10}
-default_model: v2
+  v3:
+    label: "V3 risque maîtrisé"
+    weights: {growth: 0.0, earnings: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
+default_model: v3
 
 scoring:
   min_factors: 4            # au moins 4 des facteurs pondérés du modèle pour être classé

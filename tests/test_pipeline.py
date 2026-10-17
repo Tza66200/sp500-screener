@@ -48,7 +48,7 @@ def test_outputs_exist(run_dir):
 
 def test_ranking_consistency(run_dir):
     r = load(run_dir, "ranking.json")["rows"]
-    for m in ("v1", "v2"):
+    for m in ("v1", "v2", "v3"):
         elig = sorted([x for x in r if x["models"][m]["eligible"]],
                       key=lambda x: x["models"][m]["rank"])
         ranks = [x["models"][m]["rank"] for x in elig]
@@ -66,7 +66,8 @@ def test_ranking_consistency(run_dir):
 
 def test_portfolio_rules(run_dir):
     p = load(run_dir, "portfolio.json")
-    for m in ("v1", "v2"):
+    assert set(p["models"]) == {"v1", "v2", "v3"}
+    for m in ("v1", "v2", "v3"):
         h = p["models"][m]["holdings"]
         assert len(h) == 20
         sectors = pd.Series([x["sector"] for x in h]).value_counts()
@@ -78,7 +79,7 @@ def test_holdout_hidden(run_dir):
     b = load(run_dir, "backtest.json")
     assert b["revealed"] is False
     assert max(c["date"] for c in b["curves"]) <= "2020-12-31"
-    for m in ("v1", "v2"):
+    for m in ("v1", "v2", "v3"):
         pm = b["per_model"][m]
         assert "holdout" not in pm["metrics"]["reference"]
         assert {c["id"] for c in pm["criteria"]} == {
@@ -88,7 +89,7 @@ def test_holdout_hidden(run_dir):
         assert 0 < s12["base_rate"] < 1 and len(s12["quintiles"]) == 5
     f = load(run_dir, "factors.json")
     assert f["end_limit"] <= "2020-12-31"
-    assert {"composite_v1", "composite_v2"} <= {x["factor"] for x in f["summary"]}
+    assert {"composite_v1", "composite_v2", "composite_v3"} <= {x["factor"] for x in f["summary"]}
 
 
 def test_audit_counts_former_members(run_dir):

@@ -65,7 +65,10 @@ def portfolio_params(base: dict, overrides: dict | None = None, model: str | Non
             if value == "equal":
                 active = [f for f, w in params["weights"].items() if w > 0]
                 value = {f: (1 / len(active) if f in active else 0.0) for f in FACTORS}
-            elif isinstance(value, dict) and model in value:
+            elif isinstance(value, dict) and set(value) <= set(base["models"]):
+                if model not in value:
+                    raise ValueError(f"Pondérations de robustesse non définies pour {model} "
+                                     "dans protocol.yaml")
                 value = value[model]
             value = {f: float(value.get(f, 0.0)) for f in FACTORS}
         params[key] = copy.deepcopy(value)

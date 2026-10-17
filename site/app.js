@@ -101,7 +101,8 @@ function initModel() {
   const meta = state.data.meta;
   const saved = store.get("model");
   state.model = meta.models[saved] ? saved : meta.default_model;
-  const order = [meta.default_model, ...Object.keys(meta.models).filter((m) => m !== meta.default_model)];
+  // Modèle par défaut d'abord, puis les autres du plus récent au plus ancien
+  const order = [meta.default_model, ...Object.keys(meta.models).filter((m) => m !== meta.default_model).sort().reverse()];
   const box = $("#model-switch");
   box.innerHTML = order.map((m) => `<button type="button" role="radio" data-m="${esc(m)}">${esc(meta.models[m].label)}</button>`).join("");
   box.addEventListener("click", (e) => {
@@ -559,8 +560,9 @@ const ts = (s) => parseDate(s).getTime();
 const isoDate = (x) => dateFr(new Date(x).toISOString().slice(0, 10));
 
 // ---------------------------------------------------------------- backtest
-const VARIANT_COLORS = { equal_weights: "--s5", trend_filter: "--s6", fixed_12m: "--s7" };
-const MODEL_COLORS = { v1: "--s2", v2: "--s1" };
+// Palette catégorielle validée (8 teintes) : 3 modèles + 2 indices + 3 variantes au plus
+const MODEL_COLORS = { v1: "--s2", v2: "--s1", v3: "--s5" };
+const VARIANT_COLORS = { equal_weights: "--s6", trend_filter: "--s7", fixed_12m: "--s8" };
 const extraVariants = new Set();
 
 function renderBacktest() {
@@ -572,6 +574,7 @@ function renderBacktest() {
     ? `Période réservée révélée : les résultats depuis le ${esc(dateFr(b.holdout_start, true))} sont inclus. Les modèles ne doivent plus être modifiés en fonction de ces résultats.`
     : `Les résultats sont affichés du ${esc(dateFr(b.start, true))} au ${esc(dateFr(b.design_end, true))}. La période depuis le ${esc(dateFr(b.holdout_start, true))} est réservée : elle reste masquée jusqu'à ce que les modèles soient figés, puis sera révélée une seule fois pour les deux (paramètre <code>holdout.revealed</code> de <code>config/protocol.yaml</code>).`;
   if (M() === "v2") notice += `<br><strong>V2 a été conçue après avoir vu les résultats de V1 sur cette période.</strong> Ses chiffres ci-dessous ne valent pas validation : seule la période réservée, puis le suivi réel, pourront la juger.`;
+  if (M() === "v3") notice += `<br><strong>V3 a été conçue après avoir vu les résultats de V1 et V2 sur cette période</strong>, où la faible volatilité était le meilleur facteur. Ses chiffres ci-dessous ne valent pas validation : seule la période réservée, puis le suivi réel, pourront la juger.`;
   $("#holdout-notice").innerHTML = notice;
   $("#criteria-title").textContent = `Critères fixés avant les tests, ${mlabel()}`;
   $("#criteria").innerHTML = pm.criteria.map((c) => {
@@ -590,7 +593,7 @@ function renderBacktest() {
   const eq = lineChart($("#equity-chart"), {
     label: "Valeur de 1 dollar investi", log: true, endLabels: true,
     series: () => [
-      ...b.models.map((m) => mk(m, L[m], L[m], MODEL_COLORS[m] || "--s3", m === M() ? 2.5 : 1.5)),
+      ...b.models.map((m) => mk(m, L[m], L[m], MODEL_COLORS[m] || "--s8", m === M() ? 2.5 : 1.5)),
       mk("equal_weight", L.equal_weight, "Équipondéré", "--s3"),
       mk("sp500", L.sp500, "S&P 500", "--s4"),
       ...[...extraVariants].map((v) => mk(`${M()}:${v}`, `${L[v]} (${mlabel()})`, L[v], VARIANT_COLORS[v])),

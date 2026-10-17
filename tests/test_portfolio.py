@@ -64,3 +64,12 @@ def test_exit_dates():
     assert exit_dates(h) == {}                       # B est revenu
     h2 = h.iloc[:2]
     assert exit_dates(h2) == {"B": pd.Timestamp("2016-01-01")}
+
+
+def test_every_model_has_robustness_weights():
+    st, pr = config.settings(), config.protocol()
+    for m in pr["models"]:
+        for group in ("variants", "robustness"):
+            for overrides in pr[group].values():
+                w = config.portfolio_params(st, overrides, m)["weights"]
+                assert abs(sum(w.values()) - 1) < 1e-9

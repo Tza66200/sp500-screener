@@ -20,8 +20,13 @@ holdout:
 
 # Modèles évalués (pondérations dans settings.yaml). V1 figée le 16/10/2026 avant tout
 # test ; V2 enregistrée le 16/10/2026 à 13 h 15 après lecture des résultats de V1 sur
-# 2011-2020 : ses résultats sur cette période ne valent pas validation.
-models: [v1, v2]
+# 2011-2020 : ses résultats sur cette période ne valent pas validation. V3 (« gain avec
+# risque maîtrisé ») enregistrée le 17/10/2026 à 8 h 46, avant la révélation de la période
+# réservée, après lecture des résultats de V1 et V2 : même réserve que pour V2.
+# Avec trois modèles jugés sur la même période réservée, il devient plus probable que l'un
+# d'eux y paraisse bon par hasard : on regardera les trois ensemble, sans retenir le
+# meilleur après coup.
+models: [v1, v2, v3]
 
 # Variantes comparées à la référence de chaque modèle (au plus trois)
 # "equal" = poids égaux entre les facteurs utilisés par le modèle
@@ -46,10 +51,12 @@ robustness:
     weights:
       v1: {growth: 0.30, momentum: 0.25, quality: 0.20, value: 0.10, risk: 0.15}
       v2: {earnings: 0.25, momentum: 0.30, quality: 0.25, value: 0.10, risk: 0.10}
+      v3: {earnings: 0.20, momentum: 0.30, quality: 0.20, value: 0.15, risk: 0.15}
   weights_b:
     weights:
       v1: {growth: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
       v2: {earnings: 0.20, momentum: 0.35, quality: 0.20, value: 0.15, risk: 0.10}
+      v3: {earnings: 0.20, momentum: 0.20, quality: 0.25, value: 0.15, risk: 0.20}
 
 ic_horizons_months: [1, 3, 6, 12, 18]
 success_horizons_months: [12, 18]

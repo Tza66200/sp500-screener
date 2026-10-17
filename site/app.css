@@ -33,7 +33,7 @@
   --warn: #8a5a00;
   --bar: #2a78d6;
   --bar-track: #e3e8ee;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
   --div-pos: #2a78d6; --div-neg: #e34948;
   --shadow: 0 12px 40px rgba(23, 34, 48, .18);
   --radius: 6px;
@@ -46,7 +46,7 @@
     --rule: #28303a; --rule-strong: #3b4552; --accent: #4fc1bc; --accent-ink: #0c1a1a;
     --accent-soft: #173533; --pos: #62c281; --neg: #f08080; --warn: #e3b55a;
     --bar: #3987e5; --bar-track: #232b35;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
     --div-pos: #3987e5; --div-neg: #e66767; --shadow: 0 12px 40px rgba(0, 0, 0, .5);
   }
 }
@@ -56,7 +56,7 @@
   --rule: #28303a; --rule-strong: #3b4552; --accent: #4fc1bc; --accent-ink: #0c1a1a;
   --accent-soft: #173533; --pos: #62c281; --neg: #f08080; --warn: #e3b55a;
   --bar: #3987e5; --bar-track: #232b35;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
   --div-pos: #3987e5; --div-neg: #e66767; --shadow: 0 12px 40px rgba(0, 0, 0, .5);
 }
 
@@ -339,7 +339,8 @@ summary { cursor: pointer; color: var(--accent); }
   .masthead-inner { flex-wrap: wrap; gap: 8px 12px; }
   .brand { flex-basis: calc(100% - 48px); }
   .freshness { order: 4; text-align: left; flex-basis: 100%; }
-  .model-switch { order: 3; }
+  .model-switch { order: 3; width: 100%; border-radius: 12px; }
+  .model-switch button { flex: 1; padding: 6px 6px; font-size: 12.5px; white-space: normal; line-height: 1.2; border-radius: 9px; }
   .wordmark { font-size: 26px; }
   .board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .tile { min-height: 74px; padding: 8px 7px; }

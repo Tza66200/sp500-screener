@@ -134,6 +134,18 @@ h3 { font-size: 18px; font-weight: 700; margin: 32px 0 12px; }
 .neg { color: var(--neg); }
 .next-review { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 12px 0 0; font-size: 14px; color: var(--ink-2); }
 .next-review strong { color: var(--ink); font-weight: 650; }
+.buy-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 12px; padding: 10px 12px;
+  border-radius: var(--radius); background: var(--accent-soft); }
+.buy-lab { font-size: 14px; font-weight: 650; color: var(--accent); margin-right: 4px; }
+.buy-chip { font: inherit; display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border-radius: 99px;
+  border: 1px solid var(--accent); background: var(--paper); color: var(--ink); cursor: pointer; }
+.buy-chip:hover { background: var(--accent); color: var(--accent-ink); }
+.buy-chip .tk { font-weight: 800; font-size: 15px; font-variation-settings: "wdth" 70; }
+.buy-chip .rk { font-size: 12px; color: inherit; opacity: .8; }
+.buy-note { flex-basis: 100%; font-size: 12.5px; color: var(--ink-2); }
+.badge { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 99px; white-space: nowrap; flex: none; }
+.badge.buy { background: var(--accent-soft); color: var(--accent); }
+.badge.sell { border: 1px solid var(--neg); color: var(--neg); }
 .chip {
   display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px;
   border: 1px solid var(--rule-strong); color: var(--ink-2); white-space: nowrap;

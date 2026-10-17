@@ -169,6 +169,13 @@ function renderBoard() {
   $("#next-review").innerHTML = `<span>Prochaine revue : <strong>${esc(dateFr(n, true))}</strong> (dans ${d} jour${d > 1 ? "s" : ""})</span>
     <span>Si elle avait lieu aujourd'hui : <strong>${sells} vente${sells > 1 ? "s" : ""}, ${buys} achat${buys > 1 ? "s" : ""}</strong></span>
     <span>Le pourcentage est le rendement depuis l'entrée, dividendes compris.</span>`;
+  const strip = $("#buy-strip");
+  strip.innerHTML = buys
+    ? `<span class="buy-lab">À acheter si la revue avait lieu aujourd'hui</span>${p.hypothetical_buys.map((b) =>
+        `<button type="button" class="buy-chip" data-ticker="${esc(b.ticker)}"><span class="tk">${esc(b.ticker)}</span><span class="rk">n° ${b.rank}</span></button>`).join("")}
+       <span class="buy-note">Les achats n'ont lieu qu'aux revues (15 mars, 15 mai, 15 août, 15 novembre) ; cette liste est recalculée chaque soir d'ici là. Pour partir de zéro aujourd'hui, la composition visée est : les titres non barrés ci-dessus, plus ceux-ci.</span>`
+    : `<span class="buy-lab">Aucun achat si la revue avait lieu aujourd'hui</span><span class="buy-note">Toutes les lignes resteraient dans le top ${state.data.portfolio.params.hold_rank}. Les achats n'ont lieu qu'aux revues trimestrielles.</span>`;
+  strip.onclick = (e) => { const t = e.target.closest("[data-ticker]"); if (t) openDrawer(t.dataset.ticker); };
 }
 
 // ---------------------------------------------------------------- classement
@@ -227,6 +234,12 @@ function scoreRows() {
   return custom;
 }
 
+function actionBadge(mr) {
+  if (mr.action === "acheter") return '<span class="badge buy" title="Entrerait dans le portefeuille si la revue avait lieu aujourd\'hui">à acheter</span>';
+  if (mr.in_portfolio && mr.action === "vendre") return '<span class="badge sell" title="Sortirait du portefeuille si la revue avait lieu aujourd\'hui">à vendre</span>';
+  return "";
+}
+
 function meter(v) {
   if (!isNum(v)) return '<span class="meter na"><span class="track"></span><span class="v">—</span></span>';
   return `<span class="meter"><span class="track"><span class="fill" style="width:${v.toFixed(1)}%"></span></span><span class="v">${Math.round(v)}</span></span>`;
@@ -261,7 +274,7 @@ function renderRanking() {
     const res = r.next_earnings_est ? `vers le ${dateFr(r.next_earnings_est)}` : "—";
     return `<tr class="${cls}" data-ticker="${esc(r.ticker)}" tabindex="0">
       <td class="num rk">${r._rank ?? "—"}</td>
-      <td><div class="co"><span class="tk">${esc(r.ticker)}</span>${mr.in_portfolio ? '<span class="held" title="Dans le portefeuille modèle"></span>' : ""}<span class="nm">${esc(r.name)}</span></div>
+      <td><div class="co"><span class="tk">${esc(r.ticker)}</span>${mr.in_portfolio ? '<span class="held" title="Dans le portefeuille modèle"></span>' : ""}${actionBadge(mr)}<span class="nm">${esc(r.name)}</span></div>
         ${r._eligible ? "" : `<div class="reasons">${esc((mr.reasons || []).join(" ; "))}</div>`}</td>
       <td class="hide-sm">${esc(r.sector)}</td>
       <td class="num score">${isNum(r._score) ? NF1.format(r._score) : "—"}</td>
@@ -372,7 +385,8 @@ function openDrawer(ticker) {
         <div><div class="big">${isNum(r.price) ? NF2.format(r.price) : "—"}</div><div class="lab">cours en $</div></div>
       </div>
       <p class="reasons">${others}</p>
-      ${mr.in_portfolio ? `<p><span class="chip buy">Dans le portefeuille modèle</span> ${mr.action ? `À la prochaine revue : ${esc(mr.action)}.` : ""}</p>` : ""}
+      ${mr.in_portfolio ? `<p><span class="chip">Dans le portefeuille modèle</span> ${mr.action ? `À la prochaine revue : ${esc(mr.action)}.` : ""}</p>` : ""}
+      ${mr.action === "acheter" ? `<p><span class="chip buy">À acheter</span> Entrerait dans le portefeuille si la revue avait lieu aujourd'hui (prochaine revue le ${esc(dateFr(state.data.portfolio.next_review, true))}).</p>` : ""}
       ${r._eligible ? "" : `<p class="reasons">Exclu : ${esc((mr.reasons || []).join(" ; "))}</p>`}
       <div class="d-factors">${meta.factors.map((f) => `<div class="meter${w[f] > 0 ? "" : " off"}"><span class="lab">${esc(meta.factor_labels[f])}</span>
         <span class="track"><span class="fill" style="width:${isNum(r.factors[f]) ? r.factors[f].toFixed(1) : 0}%"></span></span>

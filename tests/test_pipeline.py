@@ -43,8 +43,19 @@ def load(site, name):
 
 def test_outputs_exist(run_dir):
     for f in ("meta.json", "ranking.json", "portfolio.json", "backtest.json", "factors.json",
-              "audit.json", "changes.json", "classement.csv", "classement.xlsx"):
+              "audit.json", "changes.json", "classement.csv", "classement.xlsx", "ventes.csv"):
         assert (run_dir / f).exists(), f
+
+
+def test_trades_export(run_dir):
+    t = pd.read_csv(run_dir / "ventes.csv", encoding="utf-8-sig")
+    assert t["Modèle"].nunique() == 3
+    # Période réservée masquée : ni vente après 2020, ni ligne encore détenue
+    assert len(t) > 0 and (t["Statut"] == "vendue").all()
+    sold_on, bought_on = pd.to_datetime(t["Vente"]), pd.to_datetime(t["Achat"])
+    assert (sold_on <= "2020-12-31").all() and (sold_on > bought_on).all()
+    assert t["Rendement"].notna().all() and (t["Rendement"] > -1).all()
+    assert t["S&P 500 même période"].notna().all()
 
 
 def test_ranking_consistency(run_dir):

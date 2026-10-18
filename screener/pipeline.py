@@ -416,6 +416,10 @@ def run(offline: bool = False) -> None:
                 bench=bench_series, rf_daily=rf_daily, ic_obs=ic_obs, success=success,
                 audit=audit, status=status, portfolios=portfolios, next_review_date=nrev,
                 today=today, valid_start=valid_start, prices=prices, panel_dates=len(panel))
+    trades = R.export_trades(runs=runs, models=models,
+                             labels={m: settings["models"][m]["label"] for m in models},
+                             bench=bench_series, info=info, protocol=protocol)
+    log.info("Ventes exportées : %d lignes", len(trades))
     log.info("Terminé.")
 
 

@@ -341,6 +341,58 @@ def export_tables(live: pd.DataFrame, blocks: dict, models: list[str], labels: d
         method.to_excel(xw, sheet_name="Méthode", index=False)
 
 
+def export_trades(*, runs: dict, models: list[str], labels: dict, bench: dict,
+                  info: pd.DataFrame | None, protocol: dict) -> pd.DataFrame:
+    """Lignes du portefeuille de référence de chaque modèle : rendement du titre entre l'achat
+    et la vente (dividendes compris, avant frais), comparé aux deux indices sur la même
+    période. Tant que la période réservée est masquée, seules les ventes conclues avant son
+    début figurent, sans les lignes encore détenues."""
+    revealed = bool(protocol["holdout"]["revealed"])
+    limit = None if revealed else pd.Timestamp(protocol["design_period"]["end"])
+    names = info["name"] if info is not None and "name" in info else pd.Series(dtype=object)
+    sectors = info["sector"] if info is not None and "sector" in info else pd.Series(dtype=object)
+
+    def bench_return(key, a, b):
+        s = bench.get(key)
+        if s is None:
+            return None
+        v0, v1 = s.asof(a), s.asof(b)
+        ok = pd.notna(v0) and pd.notna(v1) and v0 > 0
+        return round(float(v1 / v0 - 1), 6) if ok else None
+
+    def text(v):
+        return None if v is None or (not isinstance(v, str) and pd.isna(v)) else v
+
+    rows = []
+    for m in models:
+        res = runs[f"{m}:reference"]
+        items = [(p["ticker"], p["entry"], p["exit"], p["return"], p["reason"], "vendue")
+                 for p in res.positions if limit is None or p["exit"] <= limit]
+        if limit is None and len(res.equity):
+            end = res.equity.index[-1]
+            items += [(t, h["entry_date"], end,
+                       h["last_price"] / h["entry_price"] - 1 if h["entry_price"] else None,
+                       "", "détenue") for t, h in res.holdings.items()]
+        for t, a, b, r, why, status in items:
+            a, b = pd.Timestamp(a), pd.Timestamp(b)
+            rows.append({
+                "Modèle": labels[m], "Ticker": t, "Société": text(names.get(t)),
+                "Secteur": text(sectors.get(t)), "Statut": status, "Achat": a.date(),
+                "Vente": b.date() if status == "vendue" else None,
+                "Jours détenus": int((b - a).days),
+                "Rendement": None if r is None or not np.isfinite(r) else round(float(r), 6),
+                "S&P 500 même période": bench_return("sp500", a, b),
+                "Équipondéré même période": bench_return("equal_weight", a, b),
+                "Motif de vente": why,
+            })
+    cols = ["Modèle", "Ticker", "Société", "Secteur", "Statut", "Achat", "Vente",
+            "Jours détenus", "Rendement", "S&P 500 même période", "Équipondéré même période",
+            "Motif de vente"]
+    out = pd.DataFrame(rows, columns=cols)
+    out.to_csv(SITE_DATA_DIR / "ventes.csv", index=False, encoding="utf-8-sig")
+    return out
+
+
 def snapshot_and_changes(live: pd.DataFrame, models: list[str], today) -> dict:
     d = HISTORY_DIR / "rankings"
     d.mkdir(parents=True, exist_ok=True)

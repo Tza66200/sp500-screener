@@ -1,0 +1,54 @@
+name: Analyse ponctuelle du second screener
+
+# Branche temporaire : évalue les ventes du backtest de screener-sp500-web avec les cours en
+# cache de ce dépôt. Lecture seule du cache ; résultats poussés dans une branche à part.
+on:
+  push:
+    branches: [analyse-ponctuelle-web2]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analyse-ponctuelle
+  cancel-in-progress: true
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurer le cache des données (lecture seule)
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Analyse
+        run: |
+          set -o pipefail
+          mkdir -p resultats
+          python analyse_web2.py 2>&1 | tee resultats/journal.txt
+
+      - name: Publier les résultats
+        if: always()
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p resultats && cd resultats
+          git init -q -b analyse-ponctuelle-resultats
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Résultats de l'analyse ponctuelle"
+          git push -fq "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" analyse-ponctuelle-resultats

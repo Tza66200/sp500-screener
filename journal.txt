@@ -1,0 +1,36 @@
+2026-10-20 18:55:32,469 INFO États fondamentaux : 0 sociétés à recalculer, 604 en cache
+2026-10-20 18:55:32,723 INFO États fondamentaux : 36891 lignes pour 604 sociétés (1s)
+/opt/hostedtoolcache/Python/3.13.16/x64/lib/python3.13/site-packages/pandas/core/internals/blocks.py:347: RuntimeWarning: invalid value encountered in log
+  result = func(self.values, **kwargs)
+2026-10-20 18:55:35,210 INFO Données jusqu'au 2026-10-19, 26 symboles réattribués écartés
+2026-10-20 18:55:35,217 INFO Classement de chaque séance : 3923 séances du 2011-03-15 au 2026-10-19
+2026-10-20 18:55:35,404 INFO   1/3923 (2011-03-15), 0s
+2026-10-20 18:56:17,563 INFO   251/3923 (2012-03-12), 42s
+2026-10-20 18:57:00,167 INFO   501/3923 (2013-03-12), 85s
+2026-10-20 18:57:43,533 INFO   751/3923 (2014-03-10), 128s
+2026-10-20 18:58:27,562 INFO   1001/3923 (2015-03-06), 172s
+2026-10-20 18:59:12,089 INFO   1251/3923 (2016-03-03), 217s
+2026-10-20 18:59:57,875 INFO   1501/3923 (2017-03-01), 263s
+2026-10-20 19:00:44,455 INFO   1751/3923 (2018-02-27), 309s
+2026-10-20 19:01:31,720 INFO   2001/3923 (2019-02-26), 357s
+2026-10-20 19:02:18,672 INFO   2251/3923 (2020-02-24), 403s
+2026-10-20 19:03:06,453 INFO   2501/3923 (2021-02-19), 451s
+2026-10-20 19:03:53,761 INFO   2751/3923 (2022-02-15), 499s
+2026-10-20 19:04:42,324 INFO   3001/3923 (2023-02-14), 547s
+2026-10-20 19:05:30,544 INFO   3251/3923 (2024-02-13), 595s
+2026-10-20 19:06:20,504 INFO   3501/3923 (2025-02-12), 645s
+2026-10-20 19:07:09,955 INFO   3751/3923 (2026-02-11), 695s
+2026-10-20 19:07:45,841 INFO Classements calculés en 731s
+2026-10-20 19:08:15,082 INFO v1 : 63 revues, écart max trimestriel vs site 0.00e+00 (29s)
+2026-10-20 19:08:15,082 INFO   trimestriel      valeur finale 7.174, 446 positions clôturées
+2026-10-20 19:08:15,083 INFO   vente_immediate  valeur finale 4.388, 605 positions clôturées
+2026-10-20 19:08:15,083 INFO   suivi_quotidien  valeur finale 5.216, 825 positions clôturées
+2026-10-20 19:08:44,436 INFO v2 : 63 revues, écart max trimestriel vs site 0.00e+00 (29s)
+2026-10-20 19:08:44,436 INFO   trimestriel      valeur finale 8.116, 469 positions clôturées
+2026-10-20 19:08:44,436 INFO   vente_immediate  valeur finale 5.832, 629 positions clôturées
+2026-10-20 19:08:44,436 INFO   suivi_quotidien  valeur finale 5.811, 916 positions clôturées
+2026-10-20 19:09:13,685 INFO v3 : 63 revues, écart max trimestriel vs site 0.00e+00 (29s)
+2026-10-20 19:09:13,685 INFO   trimestriel      valeur finale 6.310, 412 positions clôturées
+2026-10-20 19:09:13,685 INFO   vente_immediate  valeur finale 4.251, 569 positions clôturées
+2026-10-20 19:09:13,685 INFO   suivi_quotidien  valeur finale 4.724, 779 positions clôturées
+2026-10-20 19:09:14,298 INFO Terminé en 823s

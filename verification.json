@@ -1,0 +1,36 @@
+{
+ "modeles": {
+  "v1": {
+   "ecart_relatif_max_trimestriel_vs_site": 0.0,
+   "seances_simulees": 3923,
+   "seances_site": 3923,
+   "revues": 63,
+   "premiere_revue": "2011-03-15",
+   "derniere_revue": "2026-08-17",
+   "positions_identiques": true
+  },
+  "v2": {
+   "ecart_relatif_max_trimestriel_vs_site": 0.0,
+   "seances_simulees": 3923,
+   "seances_site": 3923,
+   "revues": 63,
+   "premiere_revue": "2011-03-15",
+   "derniere_revue": "2026-08-17",
+   "positions_identiques": true
+  },
+  "v3": {
+   "ecart_relatif_max_trimestriel_vs_site": 0.0,
+   "seances_simulees": 3923,
+   "seances_site": 3923,
+   "revues": 63,
+   "premiere_revue": "2011-03-15",
+   "derniere_revue": "2026-08-17",
+   "positions_identiques": true
+  }
+ },
+ "debut": "2011-03-15",
+ "donnees_jusquau": "2026-10-19",
+ "seances_classees": 3923,
+ "dates_du_site": 314,
+ "duree_secondes": 823
+}

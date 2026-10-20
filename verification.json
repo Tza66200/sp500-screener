@@ -1,0 +1,18 @@
+{
+ "backtest_genere_le": "2026-10-20T08:35:40Z",
+ "backtest_debut": "2011-01-31",
+ "backtest_fin": "2026-10-19",
+ "empreinte": "c0b7d607a4bcbb3a",
+ "positions": 344,
+ "ventes": 319,
+ "ecarts_journal": [],
+ "n_ecarts_journal": 0,
+ "tickers": 196,
+ "telecharges_yahoo": [],
+ "manquants": [],
+ "rendements_manquants": 0,
+ "courbe_publiee_fin": 6.2436,
+ "courbe_reconstituee_fin": 6.243628311391386,
+ "ecart_relatif_max": 4.897572151008056e-05,
+ "ecart_relatif_fin": 4.534465914751706e-06
+}

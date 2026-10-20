@@ -1,0 +1,55 @@
+name: Analyse ponctuelle des ventes
+
+# Branche temporaire : compare la vente dès l'étiquette « À vendre » à la règle trimestrielle.
+# Lecture seule du cache de données ; résultats poussés dans une branche à part. Ne touche ni
+# à main, ni au site, ni au cache.
+on:
+  push:
+    branches: [analyse-ponctuelle-ventes]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analyse-ponctuelle-ventes
+  cancel-in-progress: true
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurer le cache des données (lecture seule)
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Analyse
+        run: |
+          set -o pipefail
+          mkdir -p resultats
+          python analyse_ventes.py 2>&1 | tee resultats/journal.txt
+
+      - name: Publier les résultats
+        if: always()
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p resultats && cd resultats
+          git init -q -b analyse-ventes-resultats
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Résultats de l'analyse des ventes"
+          git push -fq "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" analyse-ventes-resultats

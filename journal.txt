@@ -1,0 +1,103 @@
+2026-10-22 11:44:30,196 INFO États fondamentaux : 0 sociétés à recalculer, 604 en cache
+2026-10-22 11:44:30,381 INFO États fondamentaux : 36912 lignes pour 604 sociétés (2s)
+/opt/hostedtoolcache/Python/3.13.16/x64/lib/python3.13/site-packages/pandas/core/internals/blocks.py:347: RuntimeWarning: invalid value encountered in log
+  result = func(self.values, **kwargs)
+2026-10-22 11:44:33,113 INFO Données jusqu'au 2026-10-21, 26 symboles réattribués écartés
+2026-10-22 11:44:33,125 INFO Classements à 376 dates (fins de mois et mi-mois)
+2026-10-22 11:44:33,415 INFO Scores historiques : 1/376 (2011-03-15)
+2026-10-22 11:44:46,429 INFO Scores historiques : 51/376 (2013-04-15)
+2026-10-22 11:44:59,835 INFO Scores historiques : 101/376 (2015-05-15)
+2026-10-22 11:45:13,713 INFO Scores historiques : 151/376 (2017-06-15)
+2026-10-22 11:45:27,961 INFO Scores historiques : 201/376 (2019-07-15)
+2026-10-22 11:45:42,639 INFO Scores historiques : 251/376 (2021-08-16)
+2026-10-22 11:45:57,506 INFO Scores historiques : 301/376 (2023-09-15)
+2026-10-22 11:46:12,705 INFO Scores historiques : 351/376 (2025-10-15)
+2026-10-22 11:46:20,699 INFO Scores historiques calculés pour 376 dates (108s)
+2026-10-22 11:46:24,071 INFO v1 site : écart relatif max 0.0e+00, 446 ventes contre 446, décisions différentes de review_decision : 0
+2026-10-22 11:46:25,112 INFO v1 decale : écart relatif max 0.0e+00, 462 ventes contre 462, décisions différentes de review_decision : 0
+2026-10-22 11:46:25,507 INFO   reference            site    CAGR totale 13,49 %
+2026-10-22 11:46:25,829 INFO   reference            decale  CAGR totale 12,26 %
+2026-10-22 11:46:26,135 INFO   seuil_x1.5           site    CAGR totale 13,63 %
+2026-10-22 11:46:26,439 INFO   seuil_x1.5           decale  CAGR totale 12,72 %
+2026-10-22 11:46:26,734 INFO   seuil_x2             site    CAGR totale 13,40 %
+2026-10-22 11:46:27,028 INFO   seuil_x2             decale  CAGR totale 11,94 %
+2026-10-22 11:46:27,305 INFO   seuil_x3             site    CAGR totale 13,44 %
+2026-10-22 11:46:27,580 INFO   seuil_x3             decale  CAGR totale 13,30 %
+2026-10-22 11:46:27,903 INFO   duree_6m             site    CAGR totale 13,74 %
+2026-10-22 11:46:28,223 INFO   duree_6m             decale  CAGR totale 12,65 %
+2026-10-22 11:46:28,531 INFO   duree_12m            site    CAGR totale 13,65 %
+2026-10-22 11:46:28,841 INFO   duree_12m            decale  CAGR totale 11,88 %
+2026-10-22 11:46:29,446 INFO   rang_lisse           site    CAGR totale 13,99 %
+2026-10-22 11:46:30,038 INFO   rang_lisse           decale  CAGR totale 12,92 %
+2026-10-22 11:46:30,371 INFO   bande                site    CAGR totale 13,31 %
+2026-10-22 11:46:30,700 INFO   bande                decale  CAGR totale 11,93 %
+2026-10-22 11:46:31,030 INFO   sans_reequilibrage   site    CAGR totale 13,31 %
+2026-10-22 11:46:31,360 INFO   sans_reequilibrage   decale  CAGR totale 11,88 %
+2026-10-22 11:46:32,025 INFO   stop_suiveur_25      site    CAGR totale 12,11 %
+2026-10-22 11:46:32,698 INFO   stop_suiveur_25      decale  CAGR totale 11,83 %
+2026-10-22 11:46:33,406 INFO   stop_relatif_20      site    CAGR totale 13,13 %
+2026-10-22 11:46:34,141 INFO   stop_relatif_20      decale  CAGR totale 11,95 %
+2026-10-22 11:46:34,498 INFO   combinaison          site    CAGR totale 13,61 %
+2026-10-22 11:46:34,805 INFO   combinaison          decale  CAGR totale 12,36 %
+2026-10-22 11:46:35,140 INFO   filtre_marche        site    CAGR totale 8,09 %
+2026-10-22 11:46:35,474 INFO   filtre_marche        decale  CAGR totale 7,76 %
+2026-10-22 11:46:37,895 INFO v1 terminé en 17s
+2026-10-22 11:46:41,220 INFO v2 site : écart relatif max 0.0e+00, 469 ventes contre 469, décisions différentes de review_decision : 0
+2026-10-22 11:46:42,271 INFO v2 decale : écart relatif max 0.0e+00, 532 ventes contre 532, décisions différentes de review_decision : 0
+2026-10-22 11:46:42,668 INFO   reference            site    CAGR totale 14,41 %
+2026-10-22 11:46:42,999 INFO   reference            decale  CAGR totale 11,49 %
+2026-10-22 11:46:43,309 INFO   seuil_x1.5           site    CAGR totale 14,51 %
+2026-10-22 11:46:43,620 INFO   seuil_x1.5           decale  CAGR totale 11,76 %
+2026-10-22 11:46:43,919 INFO   seuil_x2             site    CAGR totale 13,02 %
+2026-10-22 11:46:44,223 INFO   seuil_x2             decale  CAGR totale 11,58 %
+2026-10-22 11:46:44,505 INFO   seuil_x3             site    CAGR totale 12,76 %
+2026-10-22 11:46:44,788 INFO   seuil_x3             decale  CAGR totale 13,26 %
+2026-10-22 11:46:45,114 INFO   duree_6m             site    CAGR totale 14,83 %
+2026-10-22 11:46:45,439 INFO   duree_6m             decale  CAGR totale 12,48 %
+2026-10-22 11:46:45,751 INFO   duree_12m            site    CAGR totale 13,04 %
+2026-10-22 11:46:46,064 INFO   duree_12m            decale  CAGR totale 13,39 %
+2026-10-22 11:46:46,676 INFO   rang_lisse           site    CAGR totale 15,22 %
+2026-10-22 11:46:47,278 INFO   rang_lisse           decale  CAGR totale 12,92 %
+2026-10-22 11:46:47,609 INFO   bande                site    CAGR totale 14,26 %
+2026-10-22 11:46:48,064 INFO   bande                decale  CAGR totale 11,71 %
+2026-10-22 11:46:48,395 INFO   sans_reequilibrage   site    CAGR totale 14,61 %
+2026-10-22 11:46:48,732 INFO   sans_reequilibrage   decale  CAGR totale 12,02 %
+2026-10-22 11:46:49,431 INFO   stop_suiveur_25      site    CAGR totale 12,78 %
+2026-10-22 11:46:50,141 INFO   stop_suiveur_25      decale  CAGR totale 11,65 %
+2026-10-22 11:46:50,889 INFO   stop_relatif_20      site    CAGR totale 13,35 %
+2026-10-22 11:46:51,654 INFO   stop_relatif_20      decale  CAGR totale 11,95 %
+2026-10-22 11:46:52,019 INFO   combinaison          site    CAGR totale 13,08 %
+2026-10-22 11:46:52,336 INFO   combinaison          decale  CAGR totale 11,79 %
+2026-10-22 11:46:52,675 INFO   filtre_marche        site    CAGR totale 8,47 %
+2026-10-22 11:46:53,019 INFO   filtre_marche        decale  CAGR totale 7,02 %
+2026-10-22 11:46:55,493 INFO v2 terminé en 18s
+2026-10-22 11:46:58,827 INFO v3 site : écart relatif max 0.0e+00, 412 ventes contre 412, décisions différentes de review_decision : 0
+2026-10-22 11:46:59,871 INFO v3 decale : écart relatif max 0.0e+00, 451 ventes contre 451, décisions différentes de review_decision : 0
+2026-10-22 11:47:00,262 INFO   reference            site    CAGR totale 12,60 %
+2026-10-22 11:47:00,586 INFO   reference            decale  CAGR totale 10,74 %
+2026-10-22 11:47:00,892 INFO   seuil_x1.5           site    CAGR totale 10,93 %
+2026-10-22 11:47:01,200 INFO   seuil_x1.5           decale  CAGR totale 10,53 %
+2026-10-22 11:47:01,494 INFO   seuil_x2             site    CAGR totale 11,53 %
+2026-10-22 11:47:01,788 INFO   seuil_x2             decale  CAGR totale 12,14 %
+2026-10-22 11:47:02,070 INFO   seuil_x3             site    CAGR totale 13,07 %
+2026-10-22 11:47:02,350 INFO   seuil_x3             decale  CAGR totale 11,81 %
+2026-10-22 11:47:02,675 INFO   duree_6m             site    CAGR totale 12,79 %
+2026-10-22 11:47:02,997 INFO   duree_6m             decale  CAGR totale 11,74 %
+2026-10-22 11:47:03,309 INFO   duree_12m            site    CAGR totale 11,61 %
+2026-10-22 11:47:03,619 INFO   duree_12m            decale  CAGR totale 10,82 %
+2026-10-22 11:47:04,227 INFO   rang_lisse           site    CAGR totale 11,18 %
+2026-10-22 11:47:04,831 INFO   rang_lisse           decale  CAGR totale 11,20 %
+2026-10-22 11:47:05,158 INFO   bande                site    CAGR totale 12,48 %
+2026-10-22 11:47:05,488 INFO   bande                decale  CAGR totale 10,86 %
+2026-10-22 11:47:05,815 INFO   sans_reequilibrage   site    CAGR totale 12,48 %
+2026-10-22 11:47:06,145 INFO   sans_reequilibrage   decale  CAGR totale 10,86 %
+2026-10-22 11:47:06,791 INFO   stop_suiveur_25      site    CAGR totale 11,79 %
+2026-10-22 11:47:07,442 INFO   stop_suiveur_25      decale  CAGR totale 10,51 %
+2026-10-22 11:47:08,168 INFO   stop_relatif_20      site    CAGR totale 11,46 %
+2026-10-22 11:47:08,908 INFO   stop_relatif_20      decale  CAGR totale 10,88 %
+2026-10-22 11:47:09,267 INFO   combinaison          site    CAGR totale 12,60 %
+2026-10-22 11:47:09,583 INFO   combinaison          decale  CAGR totale 11,96 %
+2026-10-22 11:47:09,916 INFO   filtre_marche        site    CAGR totale 8,02 %
+2026-10-22 11:47:10,250 INFO   filtre_marche        decale  CAGR totale 6,86 %
+2026-10-22 11:47:12,677 INFO v3 terminé en 17s
+2026-10-22 11:47:13,101 INFO Terminé en 165s

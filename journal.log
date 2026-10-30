@@ -1,0 +1,24 @@
+2026-10-30 23:11:22,335 INFO Univers : 503 membres actuels, historique jusqu'au 2026-08-18
+2026-10-30 23:13:15,652 INFO Cours : 645/856 titres, dernière séance 2026-10-30
+2026-10-30 23:14:39,685 INFO SEC : 623 dépôts lus, 50 jeux de faits mis à jour, 0 erreurs
+2026-10-30 23:14:40,007 INFO CIK écartés (symbole repris par une autre société) : ADT, APC, BEAM, CCEP, FCPT, KG, LB, LIFE, MI, MMI, NE, POM, S, SE, SII, STI, SUN, TE
+2026-10-30 23:14:41,296 INFO États fondamentaux : 50 sociétés à recalculer, 554 en cache
+2026-10-30 23:15:26,143 INFO États fondamentaux : 37116 lignes pour 604 sociétés (46s)
+2026-10-30 23:15:26,411 INFO Symboles réattribués écartés : ADT, APC, BBBY, BEAM, CAM, CSRA, EMC, FB, INFO, JAVA, LB, LIFE, MI, MMI, NE, NFX, PCL, POM, QRVO, S, SATS, SBNY, SE, SHLD, SPLS, STI, TE
+2026-10-30 23:15:28,742 INFO Communiqués de résultats : 50026 dates pour 603 sociétés
+/opt/hostedtoolcache/Python/3.13.17/x64/lib/python3.13/site-packages/pandas/core/internals/blocks.py:347: RuntimeWarning: invalid value encountered in log
+  result = func(self.values, **kwargs)
+2026-10-30 23:15:34,295 INFO Classement du 2026-10-30 : v1 374 éligibles, v2 374 éligibles, v3 374 éligibles sur 503
+2026-10-30 23:15:34,572 INFO Scores historiques : 1/314 (2011-03-15)
+2026-10-30 23:15:48,077 INFO Scores historiques : 51/314 (2013-08-30)
+2026-10-30 23:16:01,858 INFO Scores historiques : 101/314 (2016-03-15)
+2026-10-30 23:16:16,254 INFO Scores historiques : 151/314 (2018-08-31)
+2026-10-30 23:16:31,085 INFO Scores historiques : 201/314 (2021-03-15)
+2026-10-30 23:16:46,260 INFO Scores historiques : 251/314 (2023-08-31)
+2026-10-30 23:17:01,785 INFO Scores historiques : 301/314 (2026-03-16)
+2026-10-30 23:17:05,828 INFO Scores historiques calculés pour 314 dates (92s)
+2026-10-30 23:17:11,433 INFO Backtests v1 : 63 revues pour la référence
+2026-10-30 23:17:16,896 INFO Backtests v2 : 63 revues pour la référence
+2026-10-30 23:17:22,369 INFO Backtests v3 : 63 revues pour la référence
+2026-10-30 23:17:46,823 INFO Ventes exportées : 1385 lignes
+2026-10-30 23:17:46,823 INFO Terminé.

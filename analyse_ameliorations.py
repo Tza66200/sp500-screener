@@ -752,7 +752,8 @@ def sector_exposure(res: B.Result, start) -> dict:
             continue
         n += 1
         for sec, w in hold.values():
-            acc[sec or "Inconnu"] = acc.get(sec or "Inconnu", 0.0) + w
+            name = sec if isinstance(sec, str) and sec else "Inconnu"
+            acc[name] = acc.get(name, 0.0) + w
     return {k: v / n for k, v in sorted(acc.items())} if n else {}
 
 

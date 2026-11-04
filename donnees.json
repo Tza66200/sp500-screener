@@ -1,0 +1,1595 @@
+{
+ "suspects": {
+  "GT": {
+   "premiere": "2011-03-15",
+   "derniere": "2011-04-29",
+   "dates": 4
+  },
+  "T": {
+   "premiere": "2011-03-15",
+   "derniere": "2011-04-29",
+   "dates": 4
+  },
+  "QCOM": {
+   "premiere": "2011-04-29",
+   "derniere": "2012-01-31",
+   "dates": 12
+  },
+  "AEP": {
+   "premiere": "2011-05-16",
+   "derniere": "2012-05-15",
+   "dates": 7
+  },
+  "CNX": {
+   "premiere": "2011-05-16",
+   "derniere": "2016-02-29",
+   "dates": 20
+  },
+  "ETR": {
+   "premiere": "2011-05-16",
+   "derniere": "2011-07-29",
+   "dates": 6
+  },
+  "WHR": {
+   "premiere": "2011-07-29",
+   "derniere": "2011-10-31",
+   "dates": 7
+  },
+  "EP": {
+   "premiere": "2011-08-31",
+   "derniere": "2012-05-15",
+   "dates": 8
+  },
+  "CPWR": {
+   "premiere": "2011-09-15",
+   "derniere": "2011-12-30",
+   "dates": 6
+  },
+  "LEN": {
+   "premiere": "2011-10-17",
+   "derniere": "2012-09-28",
+   "dates": 23
+  },
+  "CNP": {
+   "premiere": "2011-11-15",
+   "derniere": "2012-07-31",
+   "dates": 14
+  },
+  "AMD": {
+   "premiere": "2012-08-15",
+   "derniere": "2012-10-31",
+   "dates": 6
+  },
+  "ORCL": {
+   "premiere": "2012-09-28",
+   "derniere": "2012-12-17",
+   "dates": 6
+  },
+  "ETN": {
+   "premiere": "2012-11-15",
+   "derniere": "2013-02-28",
+   "dates": 8
+  },
+  "CLX": {
+   "premiere": "2013-02-15",
+   "derniere": "2013-04-30",
+   "dates": 6
+  },
+  "PRGO": {
+   "premiere": "2013-11-15",
+   "derniere": "2014-01-31",
+   "dates": 6
+  },
+  "STX": {
+   "premiere": "2015-05-15",
+   "derniere": "2015-07-31",
+   "dates": 6
+  },
+  "NFLX": {
+   "premiere": "2015-07-31",
+   "derniere": "2015-10-15",
+   "dates": 6
+  },
+  "GRMN": {
+   "premiere": "2016-04-29",
+   "derniere": "2019-02-15",
+   "dates": 36
+  },
+  "YUM": {
+   "premiere": "2016-10-17",
+   "derniere": "2017-02-15",
+   "dates": 9
+  },
+  "FTI": {
+   "premiere": "2017-01-17",
+   "derniere": "2017-04-28",
+   "dates": 8
+  },
+  "DXC": {
+   "premiere": "2017-04-17",
+   "derniere": "2017-07-31",
+   "dates": 8
+  },
+  "LIN": {
+   "premiere": "2018-11-15",
+   "derniere": "2019-05-31",
+   "dates": 14
+  },
+  "AMCR": {
+   "premiere": "2019-06-17",
+   "derniere": "2019-08-30",
+   "dates": 6
+  },
+  "EIX": {
+   "premiere": "2020-02-28",
+   "derniere": "2020-04-30",
+   "dates": 5
+  },
+  "VTRS": {
+   "premiere": "2020-11-30",
+   "derniere": "2021-10-29",
+   "dates": 23
+  },
+  "CCL": {
+   "premiere": "2021-01-29",
+   "derniere": "2021-03-31",
+   "dates": 5
+  },
+  "GOOGL": {
+   "premiere": "2022-07-29",
+   "derniere": "2022-10-17",
+   "dates": 6
+  },
+  "PKG": {
+   "premiere": "2023-05-15",
+   "derniere": "2026-04-30",
+   "dates": 17
+  },
+  "PARA": {
+   "premiere": "2024-05-31",
+   "derniere": "2025-07-31",
+   "dates": 29
+  },
+  "SW": {
+   "premiere": "2024-07-15",
+   "derniere": "2024-07-31",
+   "dates": 2
+  },
+  "WAT": {
+   "premiere": "2026-05-15",
+   "derniere": "2026-11-03",
+   "dates": 13
+  },
+  "ECHO": {
+   "premiere": "2026-06-30",
+   "derniere": "2026-11-03",
+   "dates": 10
+  },
+  "SKYD": {
+   "premiere": "2026-09-30",
+   "derniere": "2026-10-30",
+   "dates": 3
+  }
+ },
+ "societes": {
+  "XOM": {
+   "ticker": "XOM",
+   "cik": 2115436,
+   "faits": [
+    {
+     "concept": "assets",
+     "tag": "Assets",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "capex",
+     "tag": "PaymentsToAcquirePropertyPlantAndEquipment",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "cash",
+     "tag": "CashAndCashEquivalentsAtCarryingValue",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "cash",
+     "tag": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "cfo",
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "debt_current",
+     "tag": "DebtCurrent",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "debt_flows",
+     "tag": "ProceedsFromIssuanceOfLongTermDebt",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "debt_flows",
+     "tag": "RepaymentsOfLongTermDebt",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "debt_noncurrent",
+     "tag": "LongTermDebtAndCapitalLeaseObligations",
+     "unit": "USD",
+     "n": 4,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "dna",
+     "tag": "DepreciationDepletionAndAmortization",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "interest_expense",
+     "tag": "InterestExpense",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "net_income",
+     "tag": "NetIncomeLoss",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "net_income",
+     "tag": "ProfitLoss",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "pretax_income",
+     "tag": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "Revenues",
+     "unit": "USD",
+     "n": 8,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "shares_outstanding",
+     "tag": "EntityCommonStockSharesOutstanding",
+     "unit": "shares",
+     "n": 2,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "shares_outstanding_gaap",
+     "tag": "CommonStockSharesOutstanding",
+     "unit": "shares",
+     "n": 12,
+     "dernier_fin": "2026-09-30",
+     "dernier_depot": "2026-11-02",
+     "formulaires": "10-Q"
+    }
+   ],
+   "etats": 2,
+   "derniers_etats": [
+    {
+     "cik": 2115436.0,
+     "known_date": "2026-08-03 00:00:00",
+     "quarter_end": "NaT",
+     "bs_end": "2026-06-30 00:00:00",
+     "revenue_ttm": null,
+     "revenue_ttm_prev": null,
+     "revenue_q_yoy": null,
+     "revenue_q_yoy_prev": null,
+     "revenue_tag": "None",
+     "oi_ttm": null,
+     "oi_ttm_prev": null,
+     "gross_profit_ttm": null,
+     "gross_profit_ttm_prev": null,
+     "ni_ttm": null,
+     "cfo_ttm": null,
+     "capex_ttm": null,
+     "dna_ttm": null,
+     "assets": 464482000000.0,
+     "assets_prev": null,
+     "cash": 10588000000.0,
+     "debt": 42368000000.0,
+     "shares": 4111911960.0,
+     "shares_date": "2026-06-30 00:00:00",
+     "sue": null,
+     "sue_quarter": "NaT",
+     "flags": "",
+     "usable_date": "2026-08-04 00:00:00"
+    },
+    {
+     "cik": 2115436.0,
+     "known_date": "2026-11-02 00:00:00",
+     "quarter_end": "NaT",
+     "bs_end": "2026-09-30 00:00:00",
+     "revenue_ttm": null,
+     "revenue_ttm_prev": null,
+     "revenue_q_yoy": null,
+     "revenue_q_yoy_prev": null,
+     "revenue_tag": "None",
+     "oi_ttm": null,
+     "oi_ttm_prev": null,
+     "gross_profit_ttm": null,
+     "gross_profit_ttm_prev": null,
+     "ni_ttm": null,
+     "cfo_ttm": null,
+     "capex_ttm": null,
+     "dna_ttm": null,
+     "assets": 470917000000.0,
+     "assets_prev": null,
+     "cash": 12153000000.0,
+     "debt": 34250000000.0,
+     "shares": 4079222444.0,
+     "shares_date": "2026-09-30 00:00:00",
+     "sue": null,
+     "sue_quarter": "NaT",
+     "flags": "",
+     "usable_date": "2026-11-03 00:00:00"
+    }
+   ],
+   "versions": 1,
+   "concepts_12m": [],
+   "concepts_trimestres": [
+    "capex",
+    "cfo",
+    "dna",
+    "interest_expense",
+    "net_income",
+    "pretax_income",
+    "revenue"
+   ],
+   "etat_du_jour": {
+    "known_date": "2026-11-03 00:00:00",
+    "assets": 470917000000.0,
+    "bs_end": "2026-09-30 00:00:00",
+    "assets_prev": "None",
+    "sue": "None",
+    "sue_quarter": "None",
+    "ni_ttm": "None",
+    "cfo_ttm": "None",
+    "capex_ttm": "None",
+    "dna_ttm": "None",
+    "cash": 12153000000.0,
+    "debt": 34250000000.0,
+    "shares": 4079222444.0,
+    "shares_date": "2026-09-30 00:00:00",
+    "flags": ""
+   },
+   "revenue_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-06-30",
+      "2025-09-30",
+      "2026-06-30",
+      "2026-09-30"
+     ],
+     "Revenues": [
+      "2025-06-30",
+      "2025-09-30",
+      "2026-06-30",
+      "2026-09-30"
+     ]
+    },
+    "douze_mois": {}
+   },
+   "net_income_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-06-30",
+      "2025-09-30",
+      "2026-06-30",
+      "2026-09-30"
+     ],
+     "NetIncomeLoss": [
+      "2025-06-30",
+      "2025-09-30",
+      "2026-06-30",
+      "2026-09-30"
+     ],
+     "ProfitLoss": [
+      "2025-06-30",
+      "2025-09-30",
+      "2026-06-30",
+      "2026-09-30"
+     ]
+    },
+    "douze_mois": {}
+   },
+   "assets_series": {
+    "trimestres": {},
+    "douze_mois": {}
+   },
+   "operating_income_series": {
+    "trimestres": {},
+    "douze_mois": {}
+   }
+  },
+  "WAT": {
+   "ticker": "WAT",
+   "cik": 1000697,
+   "faits": [
+    {
+     "concept": "assets",
+     "tag": "Assets",
+     "unit": "USD",
+     "n": 142,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "capex",
+     "tag": "PaymentsToAcquireProductiveAssets",
+     "unit": "USD",
+     "n": 7,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "cash",
+     "tag": "CashAndCashEquivalentsAtCarryingValue",
+     "unit": "USD",
+     "n": 216,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "cash",
+     "tag": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+     "unit": "USD",
+     "n": 136,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "cfo",
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "unit": "USD",
+     "n": 122,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "cfo",
+     "tag": "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+     "unit": "USD",
+     "n": 38,
+     "dernier_fin": "2018-03-31",
+     "dernier_depot": "2018-05-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "cost_of_revenue",
+     "tag": "CostOfGoodsAndServicesSold",
+     "unit": "USD",
+     "n": 258,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-23",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "cost_of_revenue",
+     "tag": "CostOfGoodsSold",
+     "unit": "USD",
+     "n": 121,
+     "dernier_fin": "2018-03-31",
+     "dernier_depot": "2018-05-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "cost_of_revenue",
+     "tag": "CostOfServices",
+     "unit": "USD",
+     "n": 121,
+     "dernier_fin": "2018-03-31",
+     "dernier_depot": "2018-05-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "debt_current",
+     "tag": "DebtCurrent",
+     "unit": "USD",
+     "n": 106,
+     "dernier_fin": "2021-12-31",
+     "dernier_depot": "2022-02-24",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "debt_current",
+     "tag": "NotesPayableCurrent",
+     "unit": "USD",
+     "n": 50,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "debt_flows",
+     "tag": "ProceedsFromIssuanceOfLongTermDebt",
+     "unit": "USD",
+     "n": 157,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "debt_flows",
+     "tag": "RepaymentsOfLongTermDebt",
+     "unit": "USD",
+     "n": 160,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "debt_noncurrent",
+     "tag": "LongTermDebtNoncurrent",
+     "unit": "USD",
+     "n": 143,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "debt_total_lt",
+     "tag": "DebtAndCapitalLeaseObligations",
+     "unit": "USD",
+     "n": 98,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "debt_total_lt",
+     "tag": "LongTermDebt",
+     "unit": "USD",
+     "n": 23,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-23",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "diluted_shares",
+     "tag": "WeightedAverageNumberOfDilutedSharesOutstanding",
+     "unit": "shares",
+     "n": 368,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "dna",
+     "tag": "Depreciation",
+     "unit": "USD",
+     "n": 160,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "gross_profit",
+     "tag": "GrossProfit",
+     "unit": "USD",
+     "n": 147,
+     "dernier_fin": "2016-07-02",
+     "dernier_depot": "2016-11-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "interest_expense",
+     "tag": "InterestExpense",
+     "unit": "USD",
+     "n": 368,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "net_income",
+     "tag": "NetIncomeLoss",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "net_income",
+     "tag": "NetIncomeLossAvailableToCommonStockholdersBasic",
+     "unit": "USD",
+     "n": 257,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-23",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "net_income",
+     "tag": "ProfitLoss",
+     "unit": "USD",
+     "n": 90,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "operating_income",
+     "tag": "OperatingIncomeLoss",
+     "unit": "USD",
+     "n": 368,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "pretax_income",
+     "tag": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic",
+     "unit": "USD",
+     "n": 36,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-23",
+     "formulaires": "10-K,10-K/A"
+    },
+    {
+     "concept": "pretax_income",
+     "tag": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+     "unit": "USD",
+     "n": 271,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "pretax_income",
+     "tag": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+     "unit": "USD",
+     "n": 97,
+     "dernier_fin": "2014-03-29",
+     "dernier_depot": "2014-05-02",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "unit": "USD",
+     "n": 183,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "Revenues",
+     "unit": "USD",
+     "n": 6,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "SalesRevenueGoodsNet",
+     "unit": "USD",
+     "n": 121,
+     "dernier_fin": "2018-03-31",
+     "dernier_depot": "2018-05-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "SalesRevenueNet",
+     "unit": "USD",
+     "n": 185,
+     "dernier_fin": "2018-03-31",
+     "dernier_depot": "2018-05-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "SalesRevenueServicesNet",
+     "unit": "USD",
+     "n": 121,
+     "dernier_fin": "2018-03-31",
+     "dernier_depot": "2018-05-04",
+     "formulaires": "10-K,10-Q"
+    },
+    {
+     "concept": "shares_outstanding",
+     "tag": "EntityCommonStockSharesOutstanding",
+     "unit": "shares",
+     "n": 71,
+     "dernier_fin": "2026-08-07",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "shares_outstanding_gaap",
+     "tag": "CommonStockSharesOutstanding",
+     "unit": "shares",
+     "n": 142,
+     "dernier_fin": "2026-07-04",
+     "dernier_depot": "2026-08-11",
+     "formulaires": "10-K,10-K/A,10-Q"
+    },
+    {
+     "concept": "short_term_investments",
+     "tag": "ShortTermInvestments",
+     "unit": "USD",
+     "n": 129,
+     "dernier_fin": "2024-12-31",
+     "dernier_depot": "2025-02-25",
+     "formulaires": "10-K,10-K/A,10-Q"
+    }
+   ],
+   "etats": 71,
+   "derniers_etats": [
+    {
+     "cik": 1000697.0,
+     "known_date": "2026-02-23 00:00:00",
+     "quarter_end": "2025-12-31 00:00:00",
+     "bs_end": "2025-12-31 00:00:00",
+     "revenue_ttm": 3165286000.0,
+     "revenue_ttm_prev": 2958387000.0,
+     "revenue_q_yoy": 0.068348,
+     "revenue_q_yoy_prev": 0.080483,
+     "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "oi_ttm": 802588000.0,
+     "oi_ttm_prev": 826353000.0,
+     "gross_profit_ttm": 1876464000.0,
+     "gross_profit_ttm_prev": 1758186000.0,
+     "ni_ttm": 642629000.0,
+     "cfo_ttm": 652555000.0,
+     "capex_ttm": 112745000.0,
+     "dna_ttm": 88144000.0,
+     "assets": 5076550000.0,
+     "assets_prev": 4553795000.0,
+     "cash": 587831000.0,
+     "debt": 1410000000.0,
+     "shares": 98101871.0,
+     "shares_date": "2026-02-19 00:00:00",
+     "sue": -0.417678,
+     "sue_quarter": "2025-12-31 00:00:00",
+     "flags": "",
+     "usable_date": "2026-02-24 00:00:00"
+    },
+    {
+     "cik": 1000697.0,
+     "known_date": "2026-05-12 00:00:00",
+     "quarter_end": "2026-04-04 00:00:00",
+     "bs_end": "2026-04-04 00:00:00",
+     "revenue_ttm": 3770581000.0,
+     "revenue_ttm_prev": 2983253000.0,
+     "revenue_q_yoy": 0.914751,
+     "revenue_q_yoy_prev": 0.068348,
+     "revenue_tag": "Revenues",
+     "oi_ttm": 603843000.0,
+     "oi_ttm_prev": 844252000.0,
+     "gross_profit_ttm": null,
+     "gross_profit_ttm_prev": null,
+     "ni_ttm": 449248000.0,
+     "cfo_ttm": 390002000.0,
+     "capex_ttm": 112745000.0,
+     "dna_ttm": 102144000.0,
+     "assets": 24531000000.0,
+     "assets_prev": 4591576000.0,
+     "cash": 462000000.0,
+     "debt": 5215000000.0,
+     "shares": 82139000000.0,
+     "shares_date": "2026-04-04 00:00:00",
+     "sue": -14.52893,
+     "sue_quarter": "2026-04-04 00:00:00",
+     "flags": "Actions : page de garde incomplète (plusieurs catégories) | Actions : moyenne diluée du trimestre utilisée",
+     "usable_date": "2026-05-13 00:00:00"
+    },
+    {
+     "cik": 1000697.0,
+     "known_date": "2026-08-11 00:00:00",
+     "quarter_end": "2026-07-04 00:00:00",
+     "bs_end": "2026-07-04 00:00:00",
+     "revenue_ttm": 4644249000.0,
+     "revenue_ttm_prev": 3046056000.0,
+     "revenue_q_yoy": 1.132674,
+     "revenue_q_yoy_prev": 0.914751,
+     "revenue_tag": "Revenues",
+     "oi_ttm": 329630000.0,
+     "oi_ttm_prev": 843353000.0,
+     "gross_profit_ttm": null,
+     "gross_profit_ttm_prev": null,
+     "ni_ttm": 166137000.0,
+     "cfo_ttm": 549861000.0,
+     "capex_ttm": null,
+     "dna_ttm": 115214000.0,
+     "assets": 24751000000.0,
+     "assets_prev": 4718075000.0,
+     "cash": 539000000.0,
+     "debt": 5086000000.0,
+     "shares": 98204000000.0,
+     "shares_date": "2026-07-04 00:00:00",
+     "sue": -4.0279,
+     "sue_quarter": "2026-07-04 00:00:00",
+     "flags": "Actions : page de garde incomplète (plusieurs catégories) | Actions : moyenne diluée du trimestre utilisée",
+     "usable_date": "2026-08-12 00:00:00"
+    }
+   ],
+   "versions": 16,
+   "concepts_12m": [
+    "capex",
+    "cfo",
+    "cost_of_revenue",
+    "dna",
+    "gross_profit",
+    "interest_expense",
+    "net_income",
+    "operating_income",
+    "pretax_income",
+    "revenue"
+   ],
+   "concepts_trimestres": [
+    "capex",
+    "cfo",
+    "cost_of_revenue",
+    "diluted_shares",
+    "dna",
+    "gross_profit",
+    "interest_expense",
+    "net_income",
+    "operating_income",
+    "pretax_income",
+    "revenue"
+   ],
+   "etat_du_jour": {
+    "known_date": "2026-11-03 00:00:00",
+    "assets": 24751000000.0,
+    "bs_end": "2026-07-04 00:00:00",
+    "revenue_ttm": 4644249000.0,
+    "quarter_end": "2026-07-04 00:00:00",
+    "revenue_ttm_prev": 3046056000.0,
+    "revenue_q_yoy": 1.132674,
+    "revenue_q_yoy_prev": 0.914751,
+    "revenue_tag": "Revenues",
+    "oi_ttm": 329630000.0,
+    "oi_ttm_prev": 843353000.0,
+    "assets_prev": 4718075000.0,
+    "sue": -4.0279,
+    "sue_quarter": "2026-07-04 00:00:00",
+    "ni_ttm": 166137000.0,
+    "cfo_ttm": 549861000.0,
+    "capex_ttm": "None",
+    "dna_ttm": 115214000.0,
+    "cash": 539000000.0,
+    "debt": 5086000000.0,
+    "shares": 98204000000.0,
+    "shares_date": "2026-07-04 00:00:00",
+    "flags": "Actions : page de garde incomplète (plusieurs catégories) | Actions : moyenne diluée du trimestre utilisée"
+   },
+   "revenue_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-06-30",
+      "2025-09-27",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "Revenues": [
+      "2025-03-29",
+      "2025-06-28",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "RevenueFromContractWithCustomerExcludingAssessedTax": [
+      "2025-06-30",
+      "2025-09-27",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "SalesRevenueNet": [
+      "2016-12-31",
+      "2017-04-01",
+      "2017-07-01",
+      "2017-09-30",
+      "2017-12-31",
+      "2018-03-31"
+     ],
+     "SalesRevenueGoodsNet": [
+      "2016-12-31",
+      "2017-04-01",
+      "2017-07-01",
+      "2017-09-30",
+      "2017-12-31",
+      "2018-03-31"
+     ],
+     "SalesRevenueServicesNet": [
+      "2016-12-31",
+      "2017-04-01",
+      "2017-07-01",
+      "2017-09-30",
+      "2017-12-31",
+      "2018-03-31"
+     ]
+    },
+    "douze_mois": {
+     "fusion": [
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "RevenueFromContractWithCustomerExcludingAssessedTax": [
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "SalesRevenueNet": [
+      "2017-07-01",
+      "2017-09-30",
+      "2017-12-31",
+      "2018-03-31"
+     ],
+     "SalesRevenueGoodsNet": [
+      "2017-07-01",
+      "2017-09-30",
+      "2017-12-31",
+      "2018-03-31"
+     ],
+     "SalesRevenueServicesNet": [
+      "2017-07-01",
+      "2017-09-30",
+      "2017-12-31",
+      "2018-03-31"
+     ]
+    }
+   },
+   "net_income_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-06-30",
+      "2025-09-27",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "NetIncomeLoss": [
+      "2025-03-29",
+      "2025-06-28",
+      "2025-09-27",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "ProfitLoss": [
+      "2025-03-29",
+      "2025-06-28",
+      "2025-09-27",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "NetIncomeLossAvailableToCommonStockholdersBasic": [
+      "2024-12-31",
+      "2025-03-29",
+      "2025-03-31",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31"
+     ]
+    },
+    "douze_mois": {
+     "fusion": [
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "NetIncomeLoss": [
+      "2025-09-27",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "ProfitLoss": [
+      "2025-09-27",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "NetIncomeLossAvailableToCommonStockholdersBasic": [
+      "2025-03-31",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31"
+     ]
+    }
+   },
+   "assets_series": {
+    "trimestres": {},
+    "douze_mois": {}
+   },
+   "operating_income_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-06-30",
+      "2025-09-27",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "OperatingIncomeLoss": [
+      "2025-06-30",
+      "2025-09-27",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ]
+    },
+    "douze_mois": {
+     "fusion": [
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ],
+     "OperatingIncomeLoss": [
+      "2025-09-30",
+      "2025-12-31",
+      "2026-04-04",
+      "2026-07-04"
+     ]
+    }
+   }
+  },
+  "FERG": {
+   "ticker": "FERG",
+   "cik": 2011641,
+   "faits": [
+    {
+     "concept": "assets",
+     "tag": "Assets",
+     "unit": "USD",
+     "n": 19,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "capex",
+     "tag": "PaymentsToAcquireProductiveAssets",
+     "unit": "USD",
+     "n": 16,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "capex",
+     "tag": "PaymentsToAcquirePropertyPlantAndEquipment",
+     "unit": "USD",
+     "n": 6,
+     "dernier_fin": "2025-04-30",
+     "dernier_depot": "2025-06-03",
+     "formulaires": "10-Q"
+    },
+    {
+     "concept": "cash",
+     "tag": "CashAndCashEquivalentsAtCarryingValue",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "cash",
+     "tag": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "cfo",
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "cfo",
+     "tag": "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+     "unit": "USD",
+     "n": 10,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-27",
+     "formulaires": "10-K,10-KT"
+    },
+    {
+     "concept": "cost_of_revenue",
+     "tag": "CostOfGoodsAndServicesSold",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "debt_current",
+     "tag": "DebtCurrent",
+     "unit": "USD",
+     "n": 19,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "debt_current",
+     "tag": "LongTermDebtCurrent",
+     "unit": "USD",
+     "n": 19,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "debt_flows",
+     "tag": "ProceedsFromIssuanceOfDebt",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "debt_flows",
+     "tag": "RepaymentsOfDebt",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "debt_noncurrent",
+     "tag": "LongTermDebtNoncurrent",
+     "unit": "USD",
+     "n": 19,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "debt_total_lt",
+     "tag": "LongTermDebt",
+     "unit": "USD",
+     "n": 3,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-27",
+     "formulaires": "10-K,10-KT"
+    },
+    {
+     "concept": "diluted_shares",
+     "tag": "WeightedAverageNumberOfDilutedSharesOutstanding",
+     "unit": "shares",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "dna",
+     "tag": "Depreciation",
+     "unit": "USD",
+     "n": 10,
+     "dernier_fin": "2025-12-31",
+     "dernier_depot": "2026-02-27",
+     "formulaires": "10-K,10-KT"
+    },
+    {
+     "concept": "dna",
+     "tag": "DepreciationAndAmortization",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "dna",
+     "tag": "DepreciationDepletionAndAmortization",
+     "unit": "USD",
+     "n": 22,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "gross_profit",
+     "tag": "GrossProfit",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "interest_expense",
+     "tag": "InterestExpenseNonoperating",
+     "unit": "USD",
+     "n": 3,
+     "dernier_fin": "2024-07-31",
+     "dernier_depot": "2024-09-25",
+     "formulaires": "10-K"
+    },
+    {
+     "concept": "net_income",
+     "tag": "NetIncomeLoss",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "operating_income",
+     "tag": "OperatingIncomeLoss",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "pretax_income",
+     "tag": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic",
+     "unit": "USD",
+     "n": 3,
+     "dernier_fin": "2024-07-31",
+     "dernier_depot": "2024-09-25",
+     "formulaires": "10-K"
+    },
+    {
+     "concept": "pretax_income",
+     "tag": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "revenue",
+     "tag": "Revenues",
+     "unit": "USD",
+     "n": 29,
+     "dernier_fin": "2026-06-30",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    },
+    {
+     "concept": "shares_outstanding",
+     "tag": "EntityCommonStockSharesOutstanding",
+     "unit": "shares",
+     "n": 9,
+     "dernier_fin": "2026-08-03",
+     "dernier_depot": "2026-08-10",
+     "formulaires": "10-K,10-KT,10-Q"
+    }
+   ],
+   "etats": 9,
+   "derniers_etats": [
+    {
+     "cik": 2011641.0,
+     "known_date": "2026-02-27 00:00:00",
+     "quarter_end": "2025-10-31 00:00:00",
+     "bs_end": "2025-12-31 00:00:00",
+     "revenue_ttm": 31159000000.0,
+     "revenue_ttm_prev": 29699000000.0,
+     "revenue_q_yoy": 0.051081,
+     "revenue_q_yoy_prev": 0.069343,
+     "revenue_tag": "Revenues",
+     "oi_ttm": 2712000000.0,
+     "oi_ttm_prev": 2578000000.0,
+     "gross_profit_ttm": 9601000000.0,
+     "gross_profit_ttm_prev": 9062000000.0,
+     "ni_ttm": 1956000000.0,
+     "cfo_ttm": 1993000000.0,
+     "capex_ttm": null,
+     "dna_ttm": 377000000.0,
+     "assets": 17152000000.0,
+     "assets_prev": null,
+     "cash": 557000000.0,
+     "debt": 4150000000.0,
+     "shares": 194502694.0,
+     "shares_date": "2026-02-20 00:00:00",
+     "sue": 0.684938,
+     "sue_quarter": "2025-10-31 00:00:00",
+     "flags": "",
+     "usable_date": "2026-03-02 00:00:00"
+    },
+    {
+     "cik": 2011641.0,
+     "known_date": "2026-05-05 00:00:00",
+     "quarter_end": "2025-10-31 00:00:00",
+     "bs_end": "2026-03-31 00:00:00",
+     "revenue_ttm": 31159000000.0,
+     "revenue_ttm_prev": 29699000000.0,
+     "revenue_q_yoy": 0.051081,
+     "revenue_q_yoy_prev": 0.069343,
+     "revenue_tag": "Revenues",
+     "oi_ttm": 2712000000.0,
+     "oi_ttm_prev": 2578000000.0,
+     "gross_profit_ttm": 9601000000.0,
+     "gross_profit_ttm_prev": 9062000000.0,
+     "ni_ttm": 1956000000.0,
+     "cfo_ttm": 1993000000.0,
+     "capex_ttm": null,
+     "dna_ttm": 377000000.0,
+     "assets": 17789000000.0,
+     "assets_prev": null,
+     "cash": 820000000.0,
+     "debt": 4127000000.0,
+     "shares": 193937826.0,
+     "shares_date": "2026-04-28 00:00:00",
+     "sue": 0.529834,
+     "sue_quarter": "2026-03-31 00:00:00",
+     "flags": "",
+     "usable_date": "2026-05-06 00:00:00"
+    },
+    {
+     "cik": 2011641.0,
+     "known_date": "2026-08-10 00:00:00",
+     "quarter_end": "NaT",
+     "bs_end": "2026-06-30 00:00:00",
+     "revenue_ttm": null,
+     "revenue_ttm_prev": null,
+     "revenue_q_yoy": null,
+     "revenue_q_yoy_prev": null,
+     "revenue_tag": null,
+     "oi_ttm": null,
+     "oi_ttm_prev": null,
+     "gross_profit_ttm": null,
+     "gross_profit_ttm_prev": null,
+     "ni_ttm": null,
+     "cfo_ttm": null,
+     "capex_ttm": null,
+     "dna_ttm": null,
+     "assets": 19303000000.0,
+     "assets_prev": null,
+     "cash": 437000000.0,
+     "debt": 4904000000.0,
+     "shares": 193452717.0,
+     "shares_date": "2026-08-03 00:00:00",
+     "sue": 0.273692,
+     "sue_quarter": "2026-06-30 00:00:00",
+     "flags": "",
+     "usable_date": "2026-08-11 00:00:00"
+    }
+   ],
+   "versions": 1,
+   "concepts_12m": [
+    "capex",
+    "cfo",
+    "cost_of_revenue",
+    "dna",
+    "gross_profit",
+    "interest_expense",
+    "net_income",
+    "operating_income",
+    "pretax_income",
+    "revenue"
+   ],
+   "concepts_trimestres": [
+    "capex",
+    "cfo",
+    "cost_of_revenue",
+    "diluted_shares",
+    "dna",
+    "gross_profit",
+    "interest_expense",
+    "net_income",
+    "operating_income",
+    "pretax_income",
+    "revenue"
+   ],
+   "etat_du_jour": {
+    "known_date": "2026-11-03 00:00:00",
+    "assets": 19303000000.0,
+    "bs_end": "2026-06-30 00:00:00",
+    "assets_prev": "None",
+    "sue": 0.273692,
+    "sue_quarter": "2026-06-30 00:00:00",
+    "ni_ttm": "None",
+    "cfo_ttm": "None",
+    "capex_ttm": "None",
+    "dna_ttm": "None",
+    "cash": 437000000.0,
+    "debt": 4904000000.0,
+    "shares": 193452717.0,
+    "shares_date": "2026-08-03 00:00:00",
+    "flags": ""
+   },
+   "revenue_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-10-31",
+      "2026-03-31",
+      "2026-06-30"
+     ],
+     "Revenues": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-10-31",
+      "2026-03-31",
+      "2026-06-30"
+     ]
+    },
+    "douze_mois": {
+     "fusion": [
+      "2025-01-31",
+      "2025-04-30",
+      "2025-07-31",
+      "2025-10-31"
+     ],
+     "Revenues": [
+      "2025-01-31",
+      "2025-04-30",
+      "2025-07-31",
+      "2025-10-31"
+     ]
+    }
+   },
+   "net_income_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-10-31",
+      "2026-03-31",
+      "2026-06-30"
+     ],
+     "NetIncomeLoss": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-10-31",
+      "2026-03-31",
+      "2026-06-30"
+     ]
+    },
+    "douze_mois": {
+     "fusion": [
+      "2025-01-31",
+      "2025-04-30",
+      "2025-07-31",
+      "2025-10-31"
+     ],
+     "NetIncomeLoss": [
+      "2025-01-31",
+      "2025-04-30",
+      "2025-07-31",
+      "2025-10-31"
+     ]
+    }
+   },
+   "assets_series": {
+    "trimestres": {},
+    "douze_mois": {}
+   },
+   "operating_income_series": {
+    "trimestres": {
+     "fusion": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-10-31",
+      "2026-03-31",
+      "2026-06-30"
+     ],
+     "OperatingIncomeLoss": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-10-31",
+      "2026-03-31",
+      "2026-06-30"
+     ]
+    },
+    "douze_mois": {
+     "fusion": [
+      "2025-01-31",
+      "2025-04-30",
+      "2025-07-31",
+      "2025-10-31"
+     ],
+     "OperatingIncomeLoss": [
+      "2025-01-31",
+      "2025-04-30",
+      "2025-07-31",
+      "2025-10-31"
+     ]
+    }
+   }
+  }
+ }
+}

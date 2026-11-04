@@ -1,0 +1,8 @@
+{
+ "Classements du site reproduits (3 dates)": "écart max 0.0e+00, colonnes différentes : 0",
+ "V1 au calendrier du site": "écart relatif max 0.0e+00, 446 ventes contre 446, décisions différentes de review_decision : 0, rangs identiques à backtest.rank_frame : oui",
+ "V2 au calendrier du site": "écart relatif max 0.0e+00, 468 ventes contre 468, décisions différentes de review_decision : 0, rangs identiques à backtest.rank_frame : oui",
+ "V3 au calendrier du site": "écart relatif max 0.0e+00, 411 ventes contre 411, décisions différentes de review_decision : 0, rangs identiques à backtest.rank_frame : oui",
+ "Stratégies simulées": "37 (en tranches) et 37 (calendrier du site)",
+ "Durée (s)": 160
+}

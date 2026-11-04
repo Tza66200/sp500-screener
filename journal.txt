@@ -1,0 +1,19 @@
+2026-11-04 20:53:47,836 INFO États fondamentaux : 0 sociétés à recalculer, 603 en cache
+2026-11-04 20:53:47,967 INFO États fondamentaux : 37120 lignes pour 603 sociétés (1s)
+2026-11-04 20:53:49,994 INFO Données jusqu'au 2026-11-03, 27 symboles réattribués écartés
+2026-11-04 20:53:50,382 INFO Classements à 377 dates (fins de mois et mi-mois)
+2026-11-04 20:53:50,626 INFO Classements : 1/377 (2011-03-15), 0s
+2026-11-04 20:54:00,871 INFO Classements : 51/377 (2013-04-15), 10s
+2026-11-04 20:54:11,466 INFO Classements : 101/377 (2015-05-15), 21s
+2026-11-04 20:54:22,416 INFO Classements : 151/377 (2017-06-15), 32s
+2026-11-04 20:54:33,933 INFO Classements : 201/377 (2019-07-15), 44s
+2026-11-04 20:54:45,962 INFO Classements : 251/377 (2021-08-16), 56s
+2026-11-04 20:54:58,109 INFO Classements : 301/377 (2023-09-15), 68s
+2026-11-04 20:55:10,251 INFO Classements : 351/377 (2025-10-15), 80s
+2026-11-04 20:55:17,101 INFO Classements calculés en 87s
+2026-11-04 20:55:17,649 INFO Contrôle des classements : écart max 0.0e+00, colonnes différentes : 0
+2026-11-04 20:55:19,382 INFO v1 : écart relatif max 0.0e+00, 446 ventes contre 446, décisions différentes de review_decision : 0, rangs identiques à backtest.rank_frame : oui
+2026-11-04 20:55:21,072 INFO v2 : écart relatif max 0.0e+00, 468 ventes contre 468, décisions différentes de review_decision : 0, rangs identiques à backtest.rank_frame : oui
+2026-11-04 20:55:22,783 INFO v3 : écart relatif max 0.0e+00, 411 ventes contre 411, décisions différentes de review_decision : 0, rangs identiques à backtest.rank_frame : oui
+2026-11-04 20:56:06,223 INFO 37 stratégies simulées en 43s
+2026-11-04 20:56:26,699 INFO Terminé en 160s

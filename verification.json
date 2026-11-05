@@ -1,0 +1,461 @@
+{
+ "faits_en_cache": {
+  "2115436": true,
+  "34088": true
+ },
+ "exxon": {
+  "cik": 2115436,
+  "etats": 71,
+  "premier": "2009-08-05",
+  "dernier": "2026-11-02",
+  "ca_12_mois_dernier": 396627000000.0
+ },
+ "v1p_identique": {
+  "semaines_comparees": 818,
+  "ecart_relatif_max": 5.059044296817916e-07,
+  "ventes_pipeline": 279,
+  "ventes_analyse": 279,
+  "portefeuille_identique": true,
+  "portefeuille_pipeline": [
+   "AOS",
+   "APA",
+   "AVY",
+   "CAH",
+   "CF",
+   "CHD",
+   "COP",
+   "DELL",
+   "DLTR",
+   "EIX",
+   "EVRG",
+   "FTNT",
+   "GM",
+   "HSIC",
+   "JBHT",
+   "MAS",
+   "MO",
+   "MPC",
+   "NEM",
+   "VRSN"
+  ],
+  "portefeuille_analyse": [
+   "AOS",
+   "APA",
+   "AVY",
+   "CAH",
+   "CF",
+   "CHD",
+   "COP",
+   "DELL",
+   "DLTR",
+   "EIX",
+   "EVRG",
+   "FTNT",
+   "GM",
+   "HSIC",
+   "JBHT",
+   "MAS",
+   "MO",
+   "MPC",
+   "NEM",
+   "VRSN"
+  ]
+ },
+ "v1p_tranches": {
+  "start": "2011-05-16",
+  "end": "2026-11-04",
+  "cagr": 0.14827086502806197,
+  "max_drawdown": -0.33984332171971576,
+  "volatility": 0.16248768275032396,
+  "bench_cagr_sp500": 0.14071743591927754,
+  "bench_cagr_equal_weight": 0.11831037177678638,
+  "part_3ans_sp": 0.670280612244898
+ },
+ "v1_identique_site": 4.6224616867540647e-07,
+ "annees": {
+  "debut": "2011-05-16",
+  "fin": "2026-11-04",
+  "valeurs": {
+   "2011": {
+    "V1 tranches": 0.014753318082520783,
+    "V1+ tranches": 0.00012767582888018048,
+    "V1 calendrier du site": -0.005114983868434564,
+    "V1+ calendrier du site": -0.00952402735066693,
+    "S&P 500": -0.04073125136749489,
+    "S&P 500 équipondéré": -0.08463997081762398
+   },
+   "2012": {
+    "V1 tranches": 0.06446007184196989,
+    "V1+ tranches": 0.13973731008697232,
+    "V1 calendrier du site": 0.10988539691476062,
+    "V1+ calendrier du site": 0.16698461786578944,
+    "S&P 500": 0.16003224238602698,
+    "S&P 500 équipondéré": 0.17161877394636016
+   },
+   "2013": {
+    "V1 tranches": 0.2706227656316742,
+    "V1+ tranches": 0.34684769787834724,
+    "V1 calendrier du site": 0.2720430673591483,
+    "V1+ calendrier du site": 0.3115471813689643,
+    "S&P 500": 0.3238848466970672,
+    "S&P 500 équipondéré": 0.3553552573312704
+   },
+   "2014": {
+    "V1 tranches": 0.11857223814639051,
+    "V1+ tranches": 0.1731570364657964,
+    "V1 calendrier du site": 0.19193383250651563,
+    "V1+ calendrier du site": 0.2189914022974524,
+    "S&P 500": 0.13688358376181653,
+    "S&P 500 équipondéré": 0.1406479223600401
+   },
+   "2015": {
+    "V1 tranches": 0.05597355144923877,
+    "V1+ tranches": 0.08734914968013108,
+    "V1 calendrier du site": 0.06751741286421153,
+    "V1+ calendrier du site": 0.047881871670525156,
+    "S&P 500": 0.013837640885860925,
+    "S&P 500 équipondéré": -0.026693705093100872
+   },
+   "2016": {
+    "V1 tranches": 0.0580560101481189,
+    "V1+ tranches": 0.062251948304289595,
+    "V1 calendrier du site": 0.037660992366383095,
+    "V1+ calendrier du site": 0.04563440426807919,
+    "S&P 500": 0.1195991330631534,
+    "S&P 500 équipondéré": 0.14504780475013246
+   },
+   "2017": {
+    "V1 tranches": 0.287854246072752,
+    "V1+ tranches": 0.30065765937642386,
+    "V1 calendrier du site": 0.21309761191248278,
+    "V1+ calendrier du site": 0.31025569077873083,
+    "S&P 500": 0.218315915558408,
+    "S&P 500 équipondéré": 0.185160446350227
+   },
+   "2018": {
+    "V1 tranches": -0.07427221653395744,
+    "V1+ tranches": -0.013874405006094714,
+    "V1 calendrier du site": -0.043703764995319805,
+    "V1+ calendrier du site": -0.007997836611667641,
+    "S&P 500": -0.043842333247031684,
+    "S&P 500 équipondéré": -0.07838998319075141
+   },
+   "2019": {
+    "V1 tranches": 0.2868062728695526,
+    "V1+ tranches": 0.239217981537857,
+    "V1 calendrier du site": 0.33104856792729387,
+    "V1+ calendrier du site": 0.2371360339975268,
+    "S&P 500": 0.31486361792387174,
+    "S&P 500 équipondéré": 0.2890656298609815
+   },
+   "2020": {
+    "V1 tranches": 0.0575418588699792,
+    "V1+ tranches": 0.15318415366888005,
+    "V1 calendrier du site": 0.06872494188244138,
+    "V1+ calendrier du site": 0.18373522278482857,
+    "S&P 500": 0.18398831564768447,
+    "S&P 500 équipondéré": 0.12658176470008775
+   },
+   "2021": {
+    "V1 tranches": 0.2726683365531155,
+    "V1+ tranches": 0.33764897301269614,
+    "V1 calendrier du site": 0.20624854294277672,
+    "V1+ calendrier du site": 0.3233481199660311,
+    "S&P 500": 0.2870536925932794,
+    "S&P 500 équipondéré": 0.2940832586307385
+   },
+   "2022": {
+    "V1 tranches": -0.09397600027401842,
+    "V1+ tranches": -0.00324526138411807,
+    "V1 calendrier du site": -0.056965268165305005,
+    "V1+ calendrier du site": 0.026142354704337345,
+    "S&P 500": -0.1811088888630299,
+    "S&P 500 équipondéré": -0.116170192833418
+   },
+   "2023": {
+    "V1 tranches": 0.08973652707206092,
+    "V1+ tranches": 0.054943378361108186,
+    "V1 calendrier du site": 0.10531560627605496,
+    "V1+ calendrier du site": 0.04245793122296915,
+    "S&P 500": 0.2628765952467029,
+    "S&P 500 équipondéré": 0.13697643496029266
+   },
+   "2024": {
+    "V1 tranches": 0.15376147836610854,
+    "V1+ tranches": 0.14683239752181865,
+    "V1 calendrier du site": 0.18149389728488163,
+    "V1+ calendrier du site": 0.12147776966192958,
+    "S&P 500": 0.250196819160305,
+    "S&P 500 équipondéré": 0.12791109771019205
+   },
+   "2025": {
+    "V1 tranches": 0.20355108728856308,
+    "V1+ tranches": 0.17877126406124932,
+    "V1 calendrier du site": 0.23634100339302289,
+    "V1+ calendrier du site": 0.21437389164066611,
+    "S&P 500": 0.17879972203280303,
+    "S&P 500 équipondéré": 0.11213079318645192
+   },
+   "2026": {
+    "V1 tranches": 0.11997541545854151,
+    "V1+ tranches": 0.1711692519449135,
+    "V1 calendrier du site": 0.12052425074761008,
+    "V1+ calendrier du site": 0.2610442911709423,
+    "S&P 500": 0.13372793760655965,
+    "S&P 500 équipondéré": 0.17979275655545446
+   },
+   "total_annualise": {
+    "V1 tranches": 0.11567075248960035,
+    "V1+ tranches": 0.14827086502806197,
+    "V1 calendrier du site": 0.1263090916926417,
+    "V1+ calendrier du site": 0.15560129228406483,
+    "S&P 500": 0.14071743591927754,
+    "S&P 500 équipondéré": 0.11831037177678638
+   }
+  }
+ },
+ "XOM": {
+  "eligible_v1p": true,
+  "rang_v1p": 18.0,
+  "rang_v3": 25.0,
+  "facteurs": {
+   "growth": 40.833333,
+   "earnings": 61.049615,
+   "momentum": 80.179028,
+   "quality": 57.65873,
+   "value": 46.5625,
+   "risk": 77.621483,
+   "buyback": 78.571429,
+   "risk_sec": 83.333333
+  },
+  "capitalisation": 692835540980.6996,
+  "rachats_nets": -0.03271,
+  "signalements": "Résultat opérationnel absent : avant impôts + intérêts utilisé"
+ },
+ "WAT": {
+  "eligible_v1p": true,
+  "rang_v1p": 355.0,
+  "rang_v3": 355.0,
+  "facteurs": {
+   "growth": 69.717514,
+   "earnings": 22.871507,
+   "momentum": 72.890026,
+   "quality": 5.996169,
+   "value": 7.5,
+   "risk": 45.652174,
+   "buyback": 0.847458,
+   "risk_sec": 37.5
+  },
+  "capitalisation": 45179394443.00888,
+  "rachats_nets": 0.650559,
+  "signalements": "Actions : nombre dilué incohérent (plus de 20 fois la page de garde), écarté"
+ },
+ "signales_aujourdhui": [
+  "ECHO"
+ ],
+ "v1p_portefeuille": [
+  {
+   "ticker": "MPC",
+   "sector": "Energy",
+   "entry_date": "2026-08-18",
+   "rank": 1.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.05913
+  },
+  {
+   "ticker": "COP",
+   "sector": "Energy",
+   "entry_date": "2026-03-17",
+   "rank": 7.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.138161
+  },
+  {
+   "ticker": "HSIC",
+   "sector": "Health Care",
+   "entry_date": "2026-08-18",
+   "rank": 8.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": -0.036871
+  },
+  {
+   "ticker": "DLTR",
+   "sector": "Consumer Staples",
+   "entry_date": "2025-11-18",
+   "rank": 10.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.38092
+  },
+  {
+   "ticker": "FTNT",
+   "sector": "Information Technology",
+   "entry_date": "2026-08-18",
+   "rank": 12.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": -0.215366
+  },
+  {
+   "ticker": "VRSN",
+   "sector": "Information Technology",
+   "entry_date": "2026-05-18",
+   "rank": 13.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.031871
+  },
+  {
+   "ticker": "NEM",
+   "sector": "Materials",
+   "entry_date": "2025-05-16",
+   "rank": 14.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 1.422856
+  },
+  {
+   "ticker": "CAH",
+   "sector": "Health Care",
+   "entry_date": "2026-03-17",
+   "rank": 15.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.248654
+  },
+  {
+   "ticker": "GM",
+   "sector": "Consumer Discretionary",
+   "entry_date": "2026-03-17",
+   "rank": 21.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.210541
+  },
+  {
+   "ticker": "MO",
+   "sector": "Consumer Staples",
+   "entry_date": "2024-08-16",
+   "rank": 23.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.780118
+  },
+  {
+   "ticker": "CF",
+   "sector": "Materials",
+   "entry_date": "2024-11-18",
+   "rank": 24.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.426296
+  },
+  {
+   "ticker": "APA",
+   "sector": "Energy",
+   "entry_date": "2025-11-18",
+   "rank": 30.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.854535
+  },
+  {
+   "ticker": "MAS",
+   "sector": "Industrials",
+   "entry_date": "2025-03-18",
+   "rank": 34.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.235569
+  },
+  {
+   "ticker": "AVY",
+   "sector": "Materials",
+   "entry_date": "2026-03-17",
+   "rank": 37.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.119038
+  },
+  {
+   "ticker": "CHD",
+   "sector": "Consumer Staples",
+   "entry_date": "2026-05-18",
+   "rank": 41.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.159186
+  },
+  {
+   "ticker": "AOS",
+   "sector": "Industrials",
+   "entry_date": "2026-03-17",
+   "rank": 43.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.02499
+  },
+  {
+   "ticker": "DELL",
+   "sector": "Information Technology",
+   "entry_date": "2026-05-18",
+   "rank": 49.0,
+   "action": "garder",
+   "sell_reason": "",
+   "return": 0.39877
+  },
+  {
+   "ticker": "EVRG",
+   "sector": "Utilities",
+   "entry_date": "2025-03-18",
+   "rank": 54.0,
+   "action": "vendre",
+   "sell_reason": "sorti du top 50 (rang 54)",
+   "return": 0.387302
+  },
+  {
+   "ticker": "JBHT",
+   "sector": "Industrials",
+   "entry_date": "2026-03-17",
+   "rank": 132.0,
+   "action": "vendre",
+   "sell_reason": "sorti du top 50 (rang 132)",
+   "return": 0.115255
+  },
+  {
+   "ticker": "EIX",
+   "sector": "Utilities",
+   "entry_date": "2026-05-18",
+   "rank": null,
+   "action": "vendre",
+   "sell_reason": "n'est plus éligible",
+   "return": -0.085245
+  }
+ ],
+ "v1p_achats": [
+  {
+   "ticker": "FDX",
+   "name": "FedEx",
+   "sector": "Industrials",
+   "rank": 9.0,
+   "score": 72.8384
+  },
+  {
+   "ticker": "DXCM",
+   "name": "Dexcom",
+   "sector": "Health Care",
+   "rank": 17.0,
+   "score": 70.859238
+  },
+  {
+   "ticker": "VST",
+   "name": "Vistra Corp.",
+   "sector": "Utilities",
+   "rank": 27.0,
+   "score": 69.03978
+  }
+ ]
+}

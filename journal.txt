@@ -1,0 +1,21 @@
+2026-11-05 21:06:48,884 INFO États fondamentaux : 0 sociétés à recalculer, 604 en cache
+2026-11-05 21:06:49,059 INFO États fondamentaux : 37306 lignes pour 604 sociétés (2s)
+2026-11-05 21:06:49,321 INFO Symboles réattribués écartés : ADT, APC, BBBY, BEAM, CAM, CSRA, EMC, FB, INFO, JAVA, LB, LIFE, MI, MMI, NE, NFX, PCL, POM, QRVO, S, SATS, SBNY, SE, SHLD, SPLS, STI, TE
+2026-11-05 21:06:51,757 INFO Communiqués de résultats : 50251 dates pour 603 sociétés
+/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/pandas/core/internals/blocks.py:347: RuntimeWarning: invalid value encountered in log
+  result = func(self.values, **kwargs)
+2026-11-05 21:06:57,882 INFO Classement du 2026-11-05 : v1 369 éligibles, v2 369 éligibles, v3 369 éligibles, v1p 367 éligibles sur 503
+2026-11-05 21:06:58,204 INFO Scores historiques : 1/315 (2011-03-15)
+2026-11-05 21:07:14,433 INFO Scores historiques : 51/315 (2013-08-30)
+2026-11-05 21:07:31,208 INFO Scores historiques : 101/315 (2016-03-15)
+2026-11-05 21:07:48,758 INFO Scores historiques : 151/315 (2018-08-31)
+2026-11-05 21:08:07,023 INFO Scores historiques : 201/315 (2021-03-15)
+2026-11-05 21:08:25,660 INFO Scores historiques : 251/315 (2023-08-31)
+2026-11-05 21:08:44,785 INFO Scores historiques : 301/315 (2026-03-16)
+2026-11-05 21:08:50,433 INFO Scores historiques calculés pour 315 dates (113s)
+2026-11-05 21:08:56,216 INFO Backtests v1 : 63 revues pour la référence
+2026-11-05 21:09:01,939 INFO Backtests v2 : 63 revues pour la référence
+2026-11-05 21:09:07,671 INFO Backtests v3 : 63 revues pour la référence
+2026-11-05 21:09:13,604 INFO Backtests v1p : 63 revues pour la référence
+2026-11-05 21:09:45,522 INFO Ventes exportées : 1686 lignes
+2026-11-05 21:09:45,522 INFO Terminé.

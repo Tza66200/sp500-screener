@@ -15,7 +15,6 @@ import os
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -51,7 +50,6 @@ def main() -> None:
                      excluded_sectors=settings["universe"]["excluded_sectors"], earnings=earn,
                      market=settings["backtest"]["benchmarks"]["equal_weight"])
     cal = ctx.calendar
-    today = cal[-1]
 
     # Exxon : états avant et après la réorganisation du 1er juillet 2026
     xom = info.at["XOM", "cik"] if "XOM" in info.index else None
@@ -128,6 +126,38 @@ def main() -> None:
                                                    "volatility", "bench_cagr_sp500",
                                                    "bench_cagr_equal_weight", "part_3ans_sp")}
     log.info("V1+ en tranches : %s", rep["v1p_tranches"])
+
+    # Rendements année par année : V1 et V1+, calendrier du site et 3 tranches, indices
+    fin = pd.Timestamp(os.environ.get("VERIF_FIN") or cal[-1])
+    w1 = {f: x for f, x in C.model_weights(settings, "v1").items() if x > 0}
+    s1 = A.Strategy("v1", "v1", "V1", "reference", tuple(w1.items()))
+    ranks1 = {d: A.rank_frame(panel[d], s1.w, settings["scoring"]["min_factors"])
+              for d in sorted(set(revs) | set(mids))}
+    sim1 = A.simulate("v1:site", mk, ranks1, s1, params["cost_per_trade"], revs)
+    tr1 = A.run_tranches("v1:tranches", mk, ranks1, s1, params["cost_per_trade"], sleeve_revs)
+    pub1 = pd.Series({pd.Timestamp(r["date"]): r.get("v1") for r in bt["curves"]}).dropna()
+    chk = pd.concat([pub1.rename("p"), B.weekly(sim1.equity / sim1.equity.iloc[0]).rename("a")],
+                    axis=1).dropna()
+    rep["v1_identique_site"] = float((chk["p"] / chk["a"] - 1).abs().max())
+    start = tr.all_invested
+    series = {"V1 tranches": tr1.equity, "V1+ tranches": tr.equity,
+              "V1 calendrier du site": sim1.equity, "V1+ calendrier du site": sim.equity,
+              "S&P 500": bench.get("sp500"), "S&P 500 équipondéré": bench.get("equal_weight")}
+    yearly = {}
+    for name, ser in series.items():
+        if ser is None:
+            continue
+        e = ser.loc[start:fin].dropna()
+        ends = e.groupby(e.index.year).last()
+        prev = float(e.iloc[0])
+        for y, v in ends.items():
+            yearly.setdefault(int(y), {})[name] = float(v / prev - 1)
+            prev = float(v)
+        yearly.setdefault("total_annualise", {})[name] = float(
+            (e.iloc[-1] / e.iloc[0]) ** (365.25 / (e.index[-1] - e.index[0]).days) - 1)
+    rep["annees"] = {"debut": str(start.date()), "fin": str(fin.date()), "valeurs": yearly}
+    log.info("V1 identique au site : %.1e", rep["v1_identique_site"])
+    log.info("ANNEES %s", json.dumps(rep["annees"], ensure_ascii=False))
 
     # Classement du jour : Exxon, Waters, titres signalés
     rk = json.loads((SITE / "ranking.json").read_text())["rows"]

@@ -28,6 +28,8 @@ METRICS = {
     "fcf_yield":        ("value",    +1, True),
     "ebit_ev":          ("value",    +1, True),
     "vol_12m":          ("risk",     -1, False),
+    "net_iss":          ("buyback",  -1, True),
+    "vol_12m_sec":      ("risk_sec", -1, True),
 }
 
 METRIC_LABELS = {
@@ -45,7 +47,84 @@ METRIC_LABELS = {
     "fcf_yield": "Rendement du free cash-flow",
     "ebit_ev": "EBIT / valeur d'entreprise",
     "vol_12m": "Volatilité annualisée sur 12 mois",
+    "net_iss": "Variation du nombre d'actions sur 1 an (rachats nets)",
+    "vol_12m_sec": "Volatilité annualisée sur 12 mois, comparée au secteur",
 }
+
+# Contrôle du nombre d'actions : rotation quotidienne moyenne (volume en dollars sur
+# capitalisation) hors de cette plage, ou nombre d'actions corrigé des fractionnements
+# multiplié ou divisé par plus de SHARES_JUMP par rapport aux deux années précédentes :
+# la capitalisation est tenue pour inconnue.
+TURNOVER_RANGE = (2e-4, 0.5)
+SHARES_JUMP = 4.0
+NET_ISS_RANGE = (0.5, 3.0)   # au-delà, variation sur un an tenue pour une erreur de données
+DILUTED_FLAG = "moyenne diluée"
+_NO_DATE = np.int64(-10 ** 9)
+
+
+def _days(ts) -> int:
+    return int(np.datetime64(pd.Timestamp(ts).date(), "D").astype(np.int64))
+
+
+def split_factors(splits: tuple | None, days: np.ndarray) -> np.ndarray:
+    """Produit des fractionnements postérieurs à chaque jour (comme Context.split_factor).
+    `splits` : (jours des fractionnements, produits cumulés depuis la fin)."""
+    days = np.atleast_1d(np.asarray(days, dtype=np.int64))
+    if splits is None:
+        return np.ones(len(days))
+    d, suf = splits
+    k = np.searchsorted(d, days, side="right")
+    out = np.ones(len(days))
+    ok = k < len(d)
+    out[ok] = suf[k[ok]]
+    return out
+
+
+def net_issuance(hist: tuple | None, splits: tuple | None, day: int) -> float:
+    """Variation sur un an du nombre d'actions, corrigée des fractionnements : dernier nombre
+    connu à `day` (daté de moins de 200 jours) comparé au nombre connu un an plus tôt
+    (à 45 jours près), de même source (page de garde ou moyenne diluée)."""
+    if hist is None:
+        return np.nan
+    u, sh, sd, dil = hist
+    k = int(np.searchsorted(u, day, side="right")) - 1
+    if k < 0 or not (np.isfinite(sh[k]) and sh[k] > 0) or sd[k] < 0 or day - sd[k] > 200:
+        return np.nan
+    gap = np.abs(sd[:k + 1] - (sd[k] - 365))
+    ok = (sd[:k + 1] >= 0) & np.isfinite(sh[:k + 1]) & (sh[:k + 1] > 0) & \
+        (dil[:k + 1] == dil[k]) & (gap <= 45)
+    if not ok.any():
+        return np.nan
+    cand = np.nonzero(ok)[0]
+    j = int(cand[gap[cand] == gap[cand].min()][-1])
+    f = split_factors(splits, np.array([sd[k], sd[j]]))
+    ratio = sh[k] * f[0] / (sh[j] * f[1])
+    if not (NET_ISS_RANGE[0] <= ratio <= NET_ISS_RANGE[1]):
+        return np.nan
+    return float(ratio - 1.0)
+
+
+def shares_suspect(hist: tuple | None, splits: tuple | None, day: int, mcap: float,
+                   dvol: float) -> bool:
+    """Nombre d'actions incohérent avec les volumes échangés ou avec son propre passé."""
+    if np.isfinite(mcap) and mcap > 0 and np.isfinite(dvol) and dvol > 0:
+        turn = dvol / mcap
+        if turn < TURNOVER_RANGE[0] or turn > TURNOVER_RANGE[1]:
+            return True
+    if hist is None:
+        return False
+    u, sh, sd, _ = hist
+    k = int(np.searchsorted(u, day, side="right")) - 1
+    if k < 0 or not (np.isfinite(sh[k]) and sh[k] > 0) or sd[k] < 0:
+        return False
+    h = np.nonzero((u <= day - 90) & (u >= day - 730) & np.isfinite(sh) & (sh > 0) &
+                   (sd >= 0))[0]
+    if len(h) < 2:
+        return False
+    now = sh[k] * split_factors(splits, sd[k])[0]
+    past = float(np.median(sh[h] * split_factors(splits, sd[h])))
+    ratio = now / past if past > 0 else np.nan
+    return bool(np.isfinite(ratio) and (ratio > SHARES_JUMP or ratio < 1 / SHARES_JUMP))
 
 LAG_SKIP = 21     # « hors dernier mois »
 LAG_6M = 126
@@ -83,6 +162,22 @@ class Context:
                          for c, v in self.earnings.items() if len(v)}
         self.adj_values = self.prices["adj_close"].ffill().values
         self.adj_col = {t: j for j, t in enumerate(self.prices["adj_close"].columns)}
+        # Historique du nombre d'actions par société et fractionnements par titre (jours)
+        self.split_days = {}
+        for t, g in self.split_lookup.items():
+            d = g["date"].to_numpy().astype("datetime64[D]").astype(np.int64)
+            r = g["ratio"].to_numpy(dtype=float)
+            self.split_days[t] = (d, np.cumprod(r[::-1])[::-1])
+        self.share_hist = {}
+        if {"shares", "shares_date", "flags"} <= set(self.states.columns):
+            for cik, g in self.states.groupby("cik", sort=False):
+                u = g["usable_date"].to_numpy().astype("datetime64[D]").astype(np.int64)
+                sd_raw = pd.to_datetime(g["shares_date"]).to_numpy().astype("datetime64[D]")
+                sd = np.where(np.isnat(sd_raw), _NO_DATE, sd_raw.astype(np.int64))
+                sh = pd.to_numeric(g["shares"], errors="coerce").to_numpy(dtype=float)
+                dil = g["flags"].fillna("").astype(str).str.contains(
+                    DILUTED_FLAG, regex=False).to_numpy()
+                self.share_hist[float(cik)] = (u, sh, sd, dil)
 
     @property
     def calendar(self) -> pd.DatetimeIndex:
@@ -192,6 +287,28 @@ def fundamental_features(ctx: Context, frame: pd.DataFrame, when: pd.Timestamp) 
 
     factor = np.array([ctx.split_factor(t, sd) for t, sd in zip(f.index, f["shares_date"])])
     f["market_cap"] = f["price"] * f["shares"] * factor
+
+    # Rachats nets et contrôle du nombre d'actions
+    day = _days(when)
+    ciks = pd.to_numeric(f["cik"], errors="coerce").to_numpy(dtype=float)
+    caps = pd.to_numeric(f["market_cap"], errors="coerce").to_numpy(dtype=float)
+    dvols = pd.to_numeric(f["dollar_vol_63"], errors="coerce").to_numpy(dtype=float) \
+        if "dollar_vol_63" in f else np.full(len(f), np.nan)
+    iss, sus = np.full(len(f), np.nan), np.zeros(len(f), dtype=bool)
+    for i, t in enumerate(f.index):
+        if not np.isfinite(ciks[i]):
+            continue
+        hist, spl = ctx.share_hist.get(float(ciks[i])), ctx.split_days.get(t)
+        iss[i] = net_issuance(hist, spl, day)
+        sus[i] = shares_suspect(hist, spl, day, caps[i], dvols[i])
+    f["net_iss"] = iss
+    f["shares_suspect"] = sus
+    if sus.any():
+        f.loc[sus, "market_cap"] = np.nan
+        note = "Nombre d'actions incohérent (volumes échangés ou historique) : capitalisation " \
+               "et valorisation tenues pour inconnues"
+        f.loc[sus, "flags"] = [" | ".join(x for x in (fl, note) if isinstance(x, str) and x)
+                               for fl in f.loc[sus, "flags"]]
     mcap = f["market_cap"].where(f["market_cap"] > 0)
     f["fcf_yield"] = (f["cfo_ttm"] - f["capex_ttm"]) / mcap
     ev = mcap + f["debt"] - f["cash"].fillna(0)      # dette inconnue -> VE inconnue
@@ -218,5 +335,6 @@ def compute(ctx: Context, when: pd.Timestamp, live: bool = False) -> pd.DataFram
     frame["cik"] = pd.to_numeric(frame["cik"], errors="coerce")
     feats = fundamental_features(ctx, frame, asof)
     feats["ear"] = ear_feature(ctx, p, feats)
+    feats["vol_12m_sec"] = feats["vol_12m"] if "vol_12m" in feats else np.nan
     feats["asof"] = asof
     return feats

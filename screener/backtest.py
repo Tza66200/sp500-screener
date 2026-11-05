@@ -102,7 +102,9 @@ def run(name: str, panel: dict, adj: pd.DataFrame, params: dict, reviews: list[p
             review_idx += 1
             scores = rank_frame(panel[review_pos[i]], params, min_factors)
             held = {t: m["bought_review"] for t, m in meta.items()}
-            decision = review_decision(scores, held, params, review_idx)
+            entries = {t: cal[m["entry_pos"]] for t, m in meta.items()}
+            decision = review_decision(scores, held, params, review_idx, entries,
+                                       review_pos[i])
             pending = (i + 1, decision, review_pos[i], review_idx)
 
     res.equity = pd.Series(eq, index=cal).dropna()

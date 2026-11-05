@@ -101,8 +101,8 @@ function initModel() {
   const meta = state.data.meta;
   const saved = store.get("model");
   state.model = meta.models[saved] ? saved : meta.default_model;
-  // Modèle par défaut d'abord, puis les autres du plus récent au plus ancien
-  const order = [meta.default_model, ...Object.keys(meta.models).filter((m) => m !== meta.default_model).sort().reverse()];
+  // Modèle par défaut d'abord, puis les autres du plus récent au plus ancien (ordre de settings.yaml inversé)
+  const order = [meta.default_model, ...Object.keys(meta.models).filter((m) => m !== meta.default_model).reverse()];
   const box = $("#model-switch");
   box.innerHTML = order.map((m) => `<button type="button" role="radio" data-m="${esc(m)}">${esc(meta.models[m].label)}</button>`).join("");
   box.addEventListener("click", (e) => {
@@ -142,6 +142,12 @@ function renderHeader() {
 
 // ---------------------------------------------------------------- tableau du portefeuille
 function portfolioOf() { return state.data.portfolio?.models?.[M()]; }
+// Règles du portefeuille du modèle choisi (communes, complétées par celles du modèle)
+function rulesOf() {
+  const prm = { ...(state.data.portfolio?.params || {}), ...(portfolioOf()?.params || {}) };
+  if (!isNum(prm.max_per_sector)) prm.max_per_sector = Math.max(1, Math.floor(prm.n_positions * prm.max_sector_fraction + 1e-9));
+  return prm;
+}
 
 function renderBoard() {
   const p = portfolioOf();
@@ -152,7 +158,8 @@ function renderBoard() {
     return;
   }
   const lr = p.last_review;
-  $("#board-note").textContent = lr ? `${mlabel()} : 20 lignes à poids égaux, issues de la revue du ${dateFr(lr.review_date, true)}. Cliquez sur un titre pour sa fiche.` : "";
+  const prm = rulesOf();
+  $("#board-note").textContent = lr ? `${mlabel()} : ${prm.n_positions} lignes à poids égaux, issues de la revue du ${dateFr(lr.review_date, true)}. Cliquez sur un titre pour sa fiche.` : "";
   board.innerHTML = p.holdings.map((h, i) => {
     const sell = h.action === "vendre";
     return `<button class="tile${sell ? " sell" : ""}" role="listitem" data-ticker="${esc(h.ticker)}" style="--i:${i}"
@@ -175,12 +182,13 @@ function renderBoard() {
     ? `<span class="buy-lab">À acheter si la revue avait lieu aujourd'hui</span>${p.hypothetical_buys.map((b) =>
         `<button type="button" class="buy-chip" data-ticker="${esc(b.ticker)}"><span class="tk">${esc(b.ticker)}</span><span class="rk">n° ${b.rank}</span></button>`).join("")}
        <span class="buy-note">Les achats n'ont lieu qu'aux revues (15 mars, 15 mai, 15 août, 15 novembre) ; cette liste est recalculée chaque soir d'ici là. Pour partir de zéro aujourd'hui, la composition visée est : les titres non barrés ci-dessus, plus ceux-ci.</span>`
-    : `<span class="buy-lab">Aucun achat si la revue avait lieu aujourd'hui</span><span class="buy-note">Toutes les lignes resteraient dans le top ${state.data.portfolio.params.hold_rank}. Les achats n'ont lieu qu'aux revues trimestrielles.</span>`;
+    : `<span class="buy-lab">Aucun achat si la revue avait lieu aujourd'hui</span><span class="buy-note">Toutes les lignes resteraient dans le portefeuille (top ${prm.hold_rank}${prm.min_hold_days ? ", ou détention de moins de 6 mois" : ""}). Les achats n'ont lieu qu'aux revues trimestrielles.</span>`;
   strip.onclick = (e) => { const t = e.target.closest("[data-ticker]"); if (t) openDrawer(t.dataset.ticker); };
 }
 
 // ---------------------------------------------------------------- classement
-const FAC_SHORT = { growth: "Croiss.", earnings: "Résult.", momentum: "Mom.", quality: "Qual.", value: "Valo.", risk: "Risque" };
+const FAC_SHORT = { growth: "Croiss.", earnings: "Résult.", momentum: "Mom.", quality: "Qual.", value: "Valo.", risk: "Risque", buyback: "Rachats", risk_sec: "Risque" };
+const FAC_HINT = { risk: " (élevé = peu volatil)", risk_sec: " (élevé = peu volatil pour son secteur)", buyback: " (élevé = nombre d'actions en baisse)" };
 
 function buildRankingHead() {
   const L = state.data.meta.factor_labels;
@@ -189,7 +197,7 @@ function buildRankingHead() {
     <th scope="col" class="sortable" data-sort="ticker">Société</th>
     <th scope="col" class="hide-sm">Secteur</th>
     <th scope="col" class="num sortable" data-sort="score">Score</th>
-    ${state.factors.map((f) => `<th scope="col" class="fac sortable" data-sort="${f}" title="${esc(L[f])}${f === "risk" ? " (élevé = peu volatil)" : ""}">${esc(FAC_SHORT[f] || L[f])}</th>`).join("")}
+    ${state.factors.map((f) => `<th scope="col" class="fac sortable" data-sort="${f}" title="${esc(L[f])}${FAC_HINT[f] || ""}">${esc(FAC_SHORT[f] || L[f])}</th>`).join("")}
     <th scope="col" class="num hide-sm sortable" data-sort="confidence" title="Part des mesures disponibles">Données</th>
     <th scope="col" class="hide-md">Résultats</th>`;
   $$("#rank-head th.sortable").forEach((th) => th.addEventListener("click", () => {
@@ -351,7 +359,7 @@ function fmtMetric(m, v) {
     return NF1.format(v) + " ×";
   }
   if (m === "sue") return sign(NF2.format(v));
-  return pct(v, 1, ["rev_growth", "rev_accel", "oi_change_assets", "ear", "gp_change"].includes(m) || m.startsWith("mom"));
+  return pct(v, 1, ["rev_growth", "rev_accel", "oi_change_assets", "ear", "gp_change", "net_iss"].includes(m) || m.startsWith("mom"));
 }
 
 function openDrawer(ticker) {
@@ -433,14 +441,15 @@ function renderPortfolio() {
   const pf = state.data.portfolio;
   const p = portfolioOf();
   if (!pf || !p) return;
-  const prm = pf.params;
+  const prm = rulesOf();
   $("#rules").innerHTML = [
-    `${prm.n_positions} lignes à poids égaux, ${Math.floor(prm.n_positions * prm.max_sector_fraction)} au maximum par secteur.`,
+    `${prm.n_positions} lignes à poids égaux, ${prm.max_per_sector} au maximum par secteur.`,
     `Revue le ${prm.review_day} de chaque mois de revue : ${prm.review_months.map((m) => MONTHS[m - 1]).join(", ")}.`,
     `Achat quand un titre entre dans le top ${prm.n_positions} ; conservation tant qu'il reste dans le top ${prm.hold_rank}.`,
+    prm.min_hold_days ? `Une ligne achetée depuis moins de 6 mois n'est pas vendue sur son rang, sauf si elle tombe au-delà du rang ${prm.hold_rank * (prm.hard_exit_mult || 3)}.` : null,
     "Vente aussi en cas d'offre de rachat, de sortie de l'indice ou de veto qualitatif.",
-    `Frais simulés : ${NF2.format(prm.cost_per_trade * 100)} % de chaque montant échangé.`,
-  ].map((t) => `<li>${esc(t)}</li>`).join("");
+    `Frais simulés : ${NF2.format(prm.cost_per_trade * 100)} % de chaque montant échangé.`,
+  ].filter(Boolean).map((t) => `<li>${esc(t)}</li>`).join("");
   $("#holdings-title").textContent = `Lignes détenues, ${mlabel()}`;
   $("#holdings-table").innerHTML = `<thead><tr><th>Société</th><th class="hide-sm">Secteur</th><th class="num">Entrée</th>
     <th class="num">Depuis l'entrée</th><th class="num">Rang</th><th>Prochaine revue</th></tr></thead><tbody>${
@@ -453,10 +462,10 @@ function renderPortfolio() {
        <div class="table-wrap"><table class="data-table"><thead><tr><th>Société</th><th>Secteur</th><th class="num">Rang</th><th class="num">Score</th></tr></thead><tbody>${
         p.hypothetical_buys.map((b) => `<tr><td><div class="co"><span class="tk">${esc(b.ticker)}</span><span class="nm">${esc(b.name || "")}</span></div></td>
         <td>${esc(b.sector)}</td><td class="num">${b.rank}</td><td class="num">${NF1.format(b.score)}</td></tr>`).join("")}</tbody></table></div>`
-    : '<p class="empty-state">Aucun changement : toutes les lignes resteraient dans le top 50.</p>';
+    : `<p class="empty-state">Aucun changement : toutes les lignes resteraient dans le portefeuille.</p>`;
   const counts = {};
   p.holdings.forEach((h) => { const s = h.sector || "Ancien membre"; counts[s] = (counts[s] || 0) + 1; });
-  const cap = Math.floor(prm.n_positions * prm.max_sector_fraction);
+  const cap = prm.max_per_sector;
   $("#sector-bars").innerHTML = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([s, n]) =>
     `<div class="hbar"><span class="lab">${esc(s)}</span><span class="track"><span class="fill" style="width:${(n / cap) * 100}%"></span></span><span class="v">${n}</span></div>`).join("")
     + `<p class="reasons">Barre pleine = plafond de ${cap} titres.</p>`;
@@ -560,9 +569,11 @@ const ts = (s) => parseDate(s).getTime();
 const isoDate = (x) => dateFr(new Date(x).toISOString().slice(0, 10));
 
 // ---------------------------------------------------------------- backtest
-// Palette catégorielle validée (8 teintes) : 3 modèles + 2 indices + 3 variantes au plus
-const MODEL_COLORS = { v1: "--s2", v2: "--s1", v3: "--s5" };
+// Palette catégorielle validée (8 teintes) : 4 modèles + 2 indices. Quand des variantes sont
+// affichées, seul le modèle choisi reste tracé : les variantes prennent des teintes libres.
+const MODEL_COLORS = { v1: "--s2", v2: "--s1", v3: "--s5", v1p: "--s7" };
 const VARIANT_COLORS = { equal_weights: "--s6", trend_filter: "--s7", fixed_12m: "--s8" };
+const variantColor = (v) => (VARIANT_COLORS[v] === MODEL_COLORS[M()] ? (MODEL_COLORS[M()] === "--s1" ? "--s2" : "--s1") : VARIANT_COLORS[v]);
 const extraVariants = new Set();
 
 function renderBacktest() {
@@ -575,6 +586,8 @@ function renderBacktest() {
     : `Les résultats sont affichés du ${esc(dateFr(b.start, true))} au ${esc(dateFr(b.design_end, true))}. La période depuis le ${esc(dateFr(b.holdout_start, true))} est réservée : elle reste masquée jusqu'à ce que les modèles soient figés, puis sera révélée une seule fois pour les deux (paramètre <code>holdout.revealed</code> de <code>config/protocol.yaml</code>).`;
   if (M() === "v2") notice += `<br><strong>V2 a été conçue après avoir vu les résultats de V1 sur cette période.</strong> Ses chiffres ci-dessous ne valent pas validation : seule la période réservée, puis le suivi réel, pourront la juger.`;
   if (M() === "v3") notice += `<br><strong>V3 a été conçue après avoir vu les résultats de V1 et V2 sur cette période</strong>, où la faible volatilité était le meilleur facteur. Ses chiffres ci-dessous ne valent pas validation : seule la période réservée, puis le suivi réel, pourront la juger.`;
+  const note = state.data.meta.models[M()]?.note;
+  if (note) notice += `<br><strong>${esc(note)}</strong>`;
   $("#holdout-notice").innerHTML = notice;
   $("#criteria-title").textContent = `Critères fixés avant les tests, ${mlabel()}`;
   $("#criteria").innerHTML = pm.criteria.map((c) => {
@@ -593,10 +606,11 @@ function renderBacktest() {
   const eq = lineChart($("#equity-chart"), {
     label: "Valeur de 1 dollar investi", log: true, endLabels: true,
     series: () => [
-      ...b.models.map((m) => mk(m, L[m], L[m], MODEL_COLORS[m] || "--s8", m === M() ? 2.5 : 1.5)),
+      ...b.models.filter((m) => !extraVariants.size || m === M())
+        .map((m) => mk(m, L[m], L[m], MODEL_COLORS[m] || "--s8", m === M() ? 2.5 : 1.5)),
       mk("equal_weight", L.equal_weight, "Équipondéré", "--s3"),
       mk("sp500", L.sp500, "S&P 500", "--s4"),
-      ...[...extraVariants].map((v) => mk(`${M()}:${v}`, `${L[v]} (${mlabel()})`, L[v], VARIANT_COLORS[v])),
+      ...[...extraVariants].map((v) => mk(`${M()}:${v}`, `${L[v]} (${mlabel()})`, L[v], variantColor(v))),
     ],
     yFormat: (v) => NF2.format(v) + " $", xFormat: isoDate,
   });
@@ -676,7 +690,7 @@ function renderFactors() {
     keys.map((k) => { const r12 = get(k, 12);
       return `<tr${k.startsWith("composite") ? ' class="ref"' : ""}><td>${esc(L[k])}</td>${H.map((h) => icCell(get(k, h)?.mean_ic)).join("")}
       <td class="num">${num(r12?.t_overlap_adj, 1)}</td><td class="num">${pct(r12?.pct_positive, 0)}</td></tr>`; }).join("")}</tbody>`;
-  const colors = { growth: "--s1", earnings: "--s2", momentum: "--s3", quality: "--s4", value: "--s5", risk: "--s6" };
+  const colors = { growth: "--s1", earnings: "--s2", momentum: "--s3", quality: "--s4", value: "--s5", risk: "--s6", buyback: "--s7", risk_sec: "--s8" };
   lineChart($("#decay-chart"), {
     label: "Corrélation moyenne selon l'horizon", zero: 0, endLabels: false,
     series: () => keys.filter((k) => colors[k]).map((k) => ({ key: k, label: L[k], color: colors[k],

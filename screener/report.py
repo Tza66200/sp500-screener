@@ -174,7 +174,15 @@ def portfolio_block(live: pd.DataFrame, port: dict, model: str) -> dict:
              "rank": live.at[t, f"rank_{model}"], "score": live.at[t, f"composite_{model}"]}
             for t in hypo.buy]
     last = ref.reviews[-1] if ref.reviews else None
+    from .portfolio import max_per_sector
+    prm = port.get("params") or {}
+    params = {k: prm[k] for k in ("n_positions", "max_sector_fraction", "hold_rank",
+                                  "review_months", "review_day", "cost_per_trade",
+                                  "min_hold_days", "hard_exit_mult") if k in prm}
+    if prm:
+        params["max_per_sector"] = max_per_sector(prm)
     return {
+        "params": params,
         "holdings": hold_rows, "hypothetical_buys": buys,
         "recent_reviews": [{"review_date": rv["review_date"], "executed": rv["executed"],
                             "buy": rv["buy"], "sell": rv["sell"]} for rv in ref.reviews[-6:]],
@@ -286,7 +294,10 @@ def write_all(*, settings, protocol, live, runs, groups, bench, rf_daily, ic_obs
         "warnings": status.get("warnings", []),
         "models": {m: {"label": model_labels[m],
                        "weights": {f: float(settings["models"][m]["weights"].get(f, 0.0))
-                                   for f in FACTORS}} for m in models},
+                                   for f in FACTORS},
+                       "note": " ".join(str(settings["models"][m].get("note") or "").split()),
+                       "portfolio": settings["models"][m].get("portfolio") or {}}
+                   for m in models},
         "default_model": settings["default_model"],
         "factors": FACTORS, "scoring": settings["scoring"],
         "universe": settings["universe"], "portfolio": settings["portfolio"],
@@ -337,7 +348,8 @@ def export_tables(live: pd.DataFrame, blocks: dict, models: list[str], labels: d
                 "return": "Rendement depuis l'entrée", "weight": "Poids", "rank": "Rang actuel",
                 "score": "Score", "action": "À la prochaine revue",
                 "sell_reason": "Motif de vente"})
-            port.to_excel(xw, sheet_name=f"Portefeuille {m.upper()}", index=False)
+            port.to_excel(xw, sheet_name=f"Portefeuille {m.upper().replace('P', '+')}",
+                          index=False)
         method.to_excel(xw, sheet_name="Méthode", index=False)
 
 

@@ -3,7 +3,7 @@
 # (commit Git avec justification) et ne doit pas être guidée par les résultats
 # de la période réservée (voir protocol.yaml).
 
-model_version: "2026-10-17"
+model_version: "2026-11-05"
 
 universe:
   # V1 : banques, assureurs et immobilier exclus (métriques EV/EBITDA, FCF, ROIC inadaptées).
@@ -11,7 +11,7 @@ universe:
   min_dollar_volume_usd: 20000000      # volume moyen en dollars sur 63 séances
   max_fundamentals_age_days: 183       # dernier 10-K/10-Q disponible depuis plus de 6 mois -> exclu
 
-# Trois modèles, évalués ensemble selon config/protocol.yaml.
+# Quatre modèles, évalués ensemble selon config/protocol.yaml.
 # V1 : pondérations fixées le 16/10/2026 au matin, avant tout test. Figée.
 # V2 : enregistrée le 16/10/2026 à 13 h 15, APRÈS avoir vu les résultats de V1 sur
 #      2011-2020. Ses pondérations viennent de la littérature (momentum, rentabilité brute,
@@ -20,6 +20,14 @@ universe:
 # V3 : enregistrée le 17/10/2026 à 8 h 46 à la demande de l'utilisateur, orientée « gain avec
 #      risque maîtrisé ». Conçue elle aussi après lecture des résultats de V1 et V2 sur
 #      2011-2020 (où le facteur risque était le meilleur) : même réserve que pour V2.
+# V1+ : enregistrée le 05/11/2026 à 16 h 11 à la demande de l'utilisateur, après l'analyse
+#      ponctuelle des corrections du 04/11/2026 (branche analyse-ponctuelle-ameliorations),
+#      qui a vu toute la période 2011-2026 : seul le suivi en conditions réelles peut la
+#      juger. V1 corrigée telle que définie dans cette analyse avant son exécution : rachats
+#      nets à la place de la croissance, volatilité comparée au sein du secteur, 3 lignes au
+#      plus par secteur, 6 mois de détention minimale (sauf rang > 150).
+#      Règles de portefeuille propres à un modèle : clé « portfolio », qui complète la
+#      section « portfolio » commune.
 models:
   v1:
     label: "V1 hybride"
@@ -30,6 +38,19 @@ models:
   v3:
     label: "V3 risque maîtrisé"
     weights: {growth: 0.0, earnings: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
+  v1p:
+    label: "V1+ corrigée"
+    weights: {growth: 0.0, earnings: 0.0, momentum: 0.25, quality: 0.20, value: 0.15, risk: 0.0,
+              buyback: 0.25, risk_sec: 0.15}
+    portfolio:
+      max_sector_fraction: 0.15   # 3 titres sur 20
+      min_hold_days: 175          # pas de vente sur le rang avant 6 mois de détention...
+      hard_exit_mult: 3           # ... sauf si le titre tombe au-delà du rang 3 x 50 = 150
+    note: >
+      V1+ a été conçue le 5 novembre 2026, après une analyse qui avait vu toute la période
+      2011-2026 : ses chiffres ne valent pas validation, seul le suivi réel pourra la juger.
+      Mesurée en 3 tranches revues à des mois décalés (sans la chance du calendrier), elle
+      rapportait 14,6 % par an de mai 2011 à novembre 2026, contre 14,0 % pour le S&P 500.
 default_model: v3
 
 scoring:

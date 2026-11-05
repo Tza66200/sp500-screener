@@ -1,0 +1,9 @@
+# Sociétés passées sous une nouvelle entité déclarante à la SEC (nouveau CIK) qui reprend la
+# cotation, par exemple après un changement d'État de constitution : les comptes antérieurs
+# restent publiés sous l'ancien CIK. Les deux historiques sont réunis pour calculer les mesures
+# (les comptes de l'ancienne entité, puis ceux de la nouvelle) et les dates de publication de
+# résultats. Format : nouveau CIK: [ancien CIK, ...]
+predecessors:
+  # ExxonMobil Holdings Corporation (Texas) succède à Exxon Mobil Corporation (New Jersey) le
+  # 1er juillet 2026, une action nouvelle pour une ancienne (formulaire 8-K12B, règle 12g-3).
+  2115436: [34088]

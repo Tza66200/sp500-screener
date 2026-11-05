@@ -20,19 +20,26 @@ class Decision:
 
 
 def max_per_sector(params: dict) -> int:
-    return max(1, math.floor(params["n_positions"] * params["max_sector_fraction"]))
+    # + 1e-9 : 20 x 0,15 doit donner 3 même si le produit tombe juste sous l'entier
+    return max(1, math.floor(params["n_positions"] * params["max_sector_fraction"] + 1e-9))
 
 
 def review_decision(scores: pd.DataFrame, held: dict[str, int], params: dict,
-                    review_index: int) -> Decision:
+                    review_index: int, entry_dates: dict | None = None,
+                    when: pd.Timestamp | None = None) -> Decision:
     """Décide des titres à garder, vendre et acheter lors d'une revue.
 
-    scores : index ticker, colonnes eligible, rank, sector.
-    held   : ticker -> numéro de la revue d'achat.
+    scores      : index ticker, colonnes eligible, rank, sector.
+    held        : ticker -> numéro de la revue d'achat.
+    entry_dates : ticker -> date d'achat ; avec `when` (date de la revue), sert à la durée
+                  minimale de détention (params « min_hold_days ») : une ligne plus jeune
+                  n'est pas vendue sur son rang, sauf au-delà de hold_rank x hard_exit_mult.
     """
     n = params["n_positions"]
     cap = max_per_sector(params)
     hold_rank = params["hold_rank"]
+    min_days = params.get("min_hold_days") or 0
+    hard_rank = hold_rank * params.get("hard_exit_mult", 3)
     eligible = scores[scores["eligible"]].sort_values("rank")
     keep, sell_reasons = [], {}
     for t, bought_at in held.items():
@@ -40,6 +47,9 @@ def review_decision(scores: pd.DataFrame, held: dict[str, int], params: dict,
             sell_reasons[t] = "n'est plus éligible"
             continue
         rank = eligible.at[t, "rank"]
+        entry = (entry_dates or {}).get(t)
+        young = bool(min_days and entry is not None and when is not None
+                     and (pd.Timestamp(when) - pd.Timestamp(entry)).days < min_days)
         if params.get("holding") == "fixed_12m":
             if review_index - bought_at >= 4:
                 if rank <= n:
@@ -48,8 +58,11 @@ def review_decision(scores: pd.DataFrame, held: dict[str, int], params: dict,
                     sell_reasons[t] = "détention de 12 mois échue"
             else:
                 keep.append(t)
-        elif rank <= hold_rank:
+        elif rank <= hold_rank or (young and rank <= hard_rank):
             keep.append(t)
+        elif young:
+            sell_reasons[t] = (f"tombé au-delà du rang {int(hard_rank)} (rang {int(rank)}) "
+                               f"avant {min_days // 29} mois de détention")
         else:
             sell_reasons[t] = f"sorti du top {hold_rank} (rang {int(rank)})"
     count: dict[str, int] = {}

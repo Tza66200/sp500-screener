@@ -4,17 +4,20 @@ Classement quantitatif des actions du S&P 500, portefeuille modèle de 20 lignes
 honnête, publiés sur un site web actualisé chaque soir par GitHub Actions. Aucun serveur à
 maintenir, aucun coût.
 
-Trois modèles coexistent (sélecteur en haut du site) :
+Quatre modèles coexistent (sélecteur en haut du site) :
 
 | Modèle | Statut | Pondérations |
 |---|---|---|
 | V1 hybride | figée le 16/10/2026 avant tout test | croissance 25, momentum 25, qualité 20, valorisation 15, risque 15 |
 | V2 littérature | enregistrée le 16/10/2026 à 13 h 15, après lecture des résultats de V1 | résultats 20, momentum 35, qualité 25, valorisation 10, risque 10 |
 | V3 risque maîtrisé (par défaut) | enregistrée le 17/10/2026 à 8 h 46, après lecture des résultats de V1 et V2 | résultats 20, momentum 25, qualité 25, valorisation 15, risque 15 |
+| V1+ corrigée | enregistrée le 05/11/2026 à 16 h 11, après l'analyse des corrections (toute la période vue) | rachats 25, momentum 25, qualité 20, valorisation 15, risque comparé au secteur 15 ; 3 lignes au plus par secteur, 6 mois de détention minimale |
 
 V2 et V3 ont été conçues en connaissant les résultats de 2011-2020 : seule la période réservée
 (depuis 2021) et le suivi réel peuvent les valider. Les trois modèles seront jugés ensemble,
 une seule fois, à la révélation de cette période, sans retenir le meilleur après coup.
+V1+ a été conçue après avoir vu toute la période 2011-2026 : seul le suivi en parallèle, à
+partir de la revue du 15/11/2026, peut la juger.
 
 Outil d'aide à la décision : ce n'est ni un conseil en investissement, ni un système d'ordres.
 
@@ -57,6 +60,7 @@ si les données ont plus de quatre jours.
 | `config/settings.yaml` | pondérations, filtres, règles du portefeuille, frais |
 | `config/protocol.yaml` | protocole de validation figé : variantes, critères, période réservée |
 | `config/vetoes.yaml` | vetos qualitatifs (titre écarté avec justification, sans toucher au score) |
+| `config/cik_predecessors.yaml` | sociétés passées sous un nouvel identifiant SEC : anciens CIK dont les comptes complètent l'historique |
 | `config/xbrl_concepts.yaml` | correspondance des étiquettes comptables XBRL |
 
 Modifier un fichier depuis l'interface web de GitHub relance automatiquement le calcul.

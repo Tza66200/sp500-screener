@@ -49,7 +49,7 @@ def test_outputs_exist(run_dir):
 
 def test_trades_export(run_dir):
     t = pd.read_csv(run_dir / "ventes.csv", encoding="utf-8-sig")
-    assert t["Modèle"].nunique() == 3
+    assert t["Modèle"].nunique() == 4
     # Période réservée masquée : ni vente après 2020, ni ligne encore détenue
     assert len(t) > 0 and (t["Statut"] == "vendue").all()
     sold_on, bought_on = pd.to_datetime(t["Vente"]), pd.to_datetime(t["Achat"])
@@ -60,7 +60,7 @@ def test_trades_export(run_dir):
 
 def test_ranking_consistency(run_dir):
     r = load(run_dir, "ranking.json")["rows"]
-    for m in ("v1", "v2", "v3"):
+    for m in ("v1", "v2", "v3", "v1p"):
         elig = sorted([x for x in r if x["models"][m]["eligible"]],
                       key=lambda x: x["models"][m]["rank"])
         ranks = [x["models"][m]["rank"] for x in elig]
@@ -78,20 +78,24 @@ def test_ranking_consistency(run_dir):
 
 def test_portfolio_rules(run_dir):
     p = load(run_dir, "portfolio.json")
-    assert set(p["models"]) == {"v1", "v2", "v3"}
-    for m in ("v1", "v2", "v3"):
+    assert set(p["models"]) == {"v1", "v2", "v3", "v1p"}
+    caps = {"v1": 5, "v2": 5, "v3": 5, "v1p": 3}
+    n_sectors = 5          # secteurs éligibles de l'univers fictif (financières exclues)
+    for m in ("v1", "v2", "v3", "v1p"):
         h = p["models"][m]["holdings"]
-        assert len(h) == 20
+        assert len(h) == min(20, caps[m] * n_sectors)
         sectors = pd.Series([x["sector"] for x in h]).value_counts()
-        assert sectors.max() <= 5
+        assert sectors.max() <= caps[m]
+        assert p["models"][m]["params"]["max_per_sector"] == caps[m]
         assert abs(sum(x["weight"] for x in h) - 1) < 0.02
+    assert p["models"]["v1p"]["params"]["min_hold_days"] == 175
 
 
 def test_holdout_hidden(run_dir):
     b = load(run_dir, "backtest.json")
     assert b["revealed"] is False
     assert max(c["date"] for c in b["curves"]) <= "2020-12-31"
-    for m in ("v1", "v2", "v3"):
+    for m in ("v1", "v2", "v3", "v1p"):
         pm = b["per_model"][m]
         assert "holdout" not in pm["metrics"]["reference"]
         assert {c["id"] for c in pm["criteria"]} == {
@@ -101,10 +105,24 @@ def test_holdout_hidden(run_dir):
         assert 0 < s12["base_rate"] < 1 and len(s12["quintiles"]) == 5
     f = load(run_dir, "factors.json")
     assert f["end_limit"] <= "2020-12-31"
-    assert {"composite_v1", "composite_v2", "composite_v3"} <= {x["factor"] for x in f["summary"]}
+    assert {"composite_v1", "composite_v2", "composite_v3", "composite_v1p", "buyback",
+            "risk_sec"} <= {x["factor"] for x in f["summary"]}
 
 
 def test_audit_counts_former_members(run_dir):
     a = load(run_dir, "audit.json")["backtest_universe"]
     assert a["former_members"] == 5          # T45-T49 ont quitté l'indice en 2015
     assert a["former_quotes_ended"] == 5
+
+
+def test_v1p_factors_in_ranking(run_dir):
+    r = load(run_dir, "ranking.json")["rows"]
+    meta = load(run_dir, "meta.json")
+    w = meta["models"]["v1p"]["weights"]
+    assert w["buyback"] == 0.25 and w["risk_sec"] == 0.15 and w["growth"] == 0
+    assert meta["models"]["v1p"]["note"]
+    elig = [x for x in r if x["models"]["v1p"]["eligible"]]
+    assert elig and all(x["factors"]["buyback"] is not None for x in elig)
+    assert all(x["factors"]["risk_sec"] is not None for x in elig)
+    # Rachats : sociétés fictives aux nombres d'actions différents d'une année sur l'autre
+    assert len({round(x["metrics"]["net_iss"], 6) for x in elig}) > 5

@@ -29,6 +29,7 @@ STALE_TTM_DAYS = 200   # au-delà, un chiffre 12 mois glissants est jugé périm
 NON_ADDITIVE = {"diluted_shares"}
 NON_NEGATIVE = {"revenue", "cost_of_revenue", "capex", "dna", "interest_expense", "gross_profit"}
 RESTATE_TOL = 0.005    # écart relatif au-delà duquel une valeur est considérée republiée
+DILUTED_MAX_RATIO = 20.0  # moyenne diluée / page de garde au-delà : erreur d'échelle
 
 
 # ----------------------------------------------------------------------------
@@ -607,8 +608,14 @@ class Company:
         dil = self._pick(self.quarters.get("diluted_shares"), d)
         if dil is not None:
             _, s, i = dil
+            # Une moyenne diluée plus de 20 fois supérieure à la page de garde trahit une erreur
+            # d'échelle dans les données XBRL (Waters, 2026 : 98 milliards au lieu de 98
+            # millions) : on garde la page de garde.
+            if shares is not None and s.val[i] > DILUTED_MAX_RATIO * shares:
+                flags.append("Actions : nombre dilué incohérent (plus de 20 fois la page de "
+                             "garde), écarté")
             # Plusieurs catégories d'actions : la page de garde n'en donne souvent qu'une.
-            if shares is None or shares < 0.7 * s.val[i]:
+            elif shares is None or shares < 0.7 * s.val[i]:
                 if shares is not None:
                     flags.append("Actions : page de garde incomplète (plusieurs catégories)")
                 shares, shares_date = s.val[i], s.end[i]

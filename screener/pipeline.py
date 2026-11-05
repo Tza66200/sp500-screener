@@ -78,8 +78,10 @@ def collect(settings: dict, concepts: dict, offline: bool) -> dict:
         if b in pstat["failed"]:
             status["warnings"].append(f"Indice de référence indisponible : {b}")
 
-    # SEC
-    ciks = sorted({int(c) for c in info["cik"].dropna()})
+    # SEC (avec les anciens CIK des sociétés passées sous une nouvelle entité déclarante)
+    preds = C.predecessors()
+    own = {int(c) for c in info["cik"].dropna()}
+    ciks = sorted(own | {p for c in own for p in preds.get(c, [])})
     sstat = SEC.refresh(ciks, concepts, per_second=data_cfg["sec_requests_per_second"])
     status["sec"] = {k: (v if not isinstance(v, list) else len(v)) for k, v in sstat.items()}
     status["sec"]["errors_sample"] = sstat["errors"][:10]
@@ -118,12 +120,34 @@ def collect(settings: dict, concepts: dict, offline: bool) -> dict:
     return {"current": current, "history": history, "info": info, "status": status}
 
 
-STATES_VERSION = "3"   # à incrémenter quand le calcul des fondamentaux change
+STATES_VERSION = "4"   # à incrémenter quand le calcul des fondamentaux change
+
+
+def fact_sources(cik: int, preds: dict) -> list[int]:
+    """CIK dont les comptes forment l'historique d'une société : anciens CIK puis le sien."""
+    return [*preds.get(int(cik), []), int(cik)]
+
+
+def merged_facts(cik: int, preds: dict) -> pd.DataFrame | None:
+    """Faits XBRL de la société et de ses prédécesseurs. Pour une même période, la première
+    valeur publiée (celle de l'ancienne entité) l'emporte, comme partout ailleurs."""
+    frames = [f for f in (SEC.load_facts(c) for c in fact_sources(cik, preds))
+              if f is not None and not f.empty]
+    if not frames:
+        return None
+    return frames[0] if len(frames) == 1 else pd.concat(frames, ignore_index=True)
+
+
+def merged_earnings_dates(cik, preds: dict) -> list[pd.Timestamp]:
+    out: set = set()
+    for c in fact_sources(int(cik), preds):
+        out |= set(SEC.earnings_dates(c))
+    return sorted(out)
 
 
 def _states_one(args):
-    cik, concepts = args
-    facts = SEC.load_facts(cik)
+    cik, concepts, preds = args
+    facts = merged_facts(cik, preds)
     if facts is None or facts.empty:
         return cik, None, None
     try:
@@ -149,12 +173,15 @@ def build_states(info: pd.DataFrame, concepts: dict) -> pd.DataFrame:
     version = STATES_VERSION + "-" + hashlib.sha1(
         json.dumps(concepts, sort_keys=True).encode()).hexdigest()[:10]
     ciks = sorted({int(c) for c in info["cik"].dropna()})
+    preds = C.predecessors()
     todo, frames = [], []
     for cik in ciks:
-        fp = C.DATA_DIR / "sec" / "facts" / f"{cik}.parquet"
-        if not fp.exists():
+        paths = [C.DATA_DIR / "sec" / "facts" / f"{c}.parquet" for c in fact_sources(cik, preds)]
+        paths = [p for p in paths if p.exists()]
+        if not paths:
             continue
-        key = f"{version}:{fp.stat().st_size}:{fp.stat().st_mtime_ns}"
+        key = version + ":" + ";".join(f"{p.stem}:{p.stat().st_size}:{p.stat().st_mtime_ns}"
+                                       for p in paths)
         cp = cache_dir / f"{cik}.parquet"
         if index.get(str(cik)) == key and cp.exists():
             frames.append(pd.read_parquet(cp))
@@ -164,7 +191,8 @@ def build_states(info: pd.DataFrame, concepts: dict) -> pd.DataFrame:
     keys = dict(todo)
     workers = max(1, (os.cpu_count() or 2))
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        for cik, st, err in pool.map(_states_one, [(c, concepts) for c, _ in todo], chunksize=4):
+        for cik, st, err in pool.map(_states_one, [(c, concepts, preds) for c, _ in todo],
+                                     chunksize=4):
             if err:
                 log.warning("États fondamentaux CIK %s : %s", cik, err)
                 continue
@@ -308,7 +336,8 @@ def run(offline: bool = False) -> None:
     if dropped:
         log.info("Symboles réattribués écartés : %s", ", ".join(dropped))
 
-    earn = {float(c): SEC.earnings_dates(int(c)) for c in info["cik"].dropna().unique()}
+    preds = C.predecessors()
+    earn = {float(c): merged_earnings_dates(c, preds) for c in info["cik"].dropna().unique()}
     log.info("Communiqués de résultats : %d dates pour %d sociétés",
              sum(len(v) for v in earn.values()), sum(1 for v in earn.values() if v))
     ctx = FT.Context(prices=prices, states=states, info=info, history=history, current=current,
@@ -400,9 +429,10 @@ def run(offline: bool = False) -> None:
         ref = runs[f"{model}:reference"]
         ref_params = C.portfolio_params(settings, protocol["variants"]["reference"], model)
         held = {t: h["bought_review"] for t, h in ref.holdings.items()}
+        entries = {t: h["entry_date"] for t, h in ref.holdings.items()}
         view = live[[f"eligible_{model}", f"rank_{model}", "sector"]].rename(
             columns={f"eligible_{model}": "eligible", f"rank_{model}": "rank"})
-        hypo = review_decision(view, held, ref_params, len(ref.reviews))
+        hypo = review_decision(view, held, ref_params, len(ref.reviews), entries, today)
         portfolios[model] = {"result": ref, "hypo": hypo, "params": ref_params}
     nrev = next_review(today, settings["portfolio"]["review_months"],
                        settings["portfolio"]["review_day"])

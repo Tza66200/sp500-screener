@@ -28,7 +28,12 @@ holdout:
 # Avec trois modèles jugés sur la même période réservée, il devient plus probable que l'un
 # d'eux y paraisse bon par hasard : on regardera les trois ensemble, sans retenir le
 # meilleur après coup.
-models: [v1, v2, v3]
+# V1+ ajoutée le 05/11/2026 à 16 h 11, après l'analyse des corrections du 04/11/2026 qui a vu
+# toute la période (période réservée comprise) : ses résultats historiques ne valent pas
+# validation. Elle sera jugée sur le suivi en parallèle, à partir de la revue du 15/11/2026,
+# pendant au moins 12 mois. Ses pondérations de robustesse reprennent celles de V1, la
+# croissance étant remplacée par les rachats nets.
+models: [v1, v2, v3, v1p]
 
 # Variantes comparées à la référence de chaque modèle (au plus trois)
 # "equal" = poids égaux entre les facteurs utilisés par le modèle
@@ -54,11 +59,13 @@ robustness:
       v1: {growth: 0.30, momentum: 0.25, quality: 0.20, value: 0.10, risk: 0.15}
       v2: {earnings: 0.25, momentum: 0.30, quality: 0.25, value: 0.10, risk: 0.10}
       v3: {earnings: 0.20, momentum: 0.30, quality: 0.20, value: 0.15, risk: 0.15}
+      v1p: {buyback: 0.30, momentum: 0.25, quality: 0.20, value: 0.10, risk_sec: 0.15}
   weights_b:
     weights:
       v1: {growth: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk: 0.15}
       v2: {earnings: 0.20, momentum: 0.35, quality: 0.20, value: 0.15, risk: 0.10}
       v3: {earnings: 0.20, momentum: 0.20, quality: 0.25, value: 0.15, risk: 0.20}
+      v1p: {buyback: 0.20, momentum: 0.25, quality: 0.25, value: 0.15, risk_sec: 0.15}
 
 ic_horizons_months: [1, 3, 6, 12, 18]
 success_horizons_months: [12, 18]

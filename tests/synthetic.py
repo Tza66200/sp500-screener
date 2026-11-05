@@ -68,6 +68,9 @@ def build(root: Path, n: int = 60, seed: int = 7, end: str = "2026-10-15") -> No
         cik = i + 1
         rows = []
         g = rng.normal(0.02, 0.03)
+        # Variation annuelle du nombre d'actions, de -4 % à +3 % (sans tirage aléatoire, pour
+        # ne pas décaler les autres valeurs fictives)
+        issue = ((i * 37) % 70 - 40) / 1000
         rev = 1000.0 * (1 + i / 20)
         margin = rng.uniform(0.05, 0.3)
         for y in range(2009, 2027):
@@ -105,8 +108,10 @@ def build(root: Path, n: int = 60, seed: int = 7, end: str = "2026-10-15") -> No
                 add("assets", "Assets", pd.NaT, rev * 8)
                 add("cash", "CashAndCashEquivalentsAtCarryingValue", pd.NaT, rev * 0.5)
                 add("debt_total_lt", "LongTermDebt", pd.NaT, rev * rng.uniform(0, 3))
+                # Nombre d'actions réaliste (1e7 à 6e8) avec rachats ou émissions propres
+                # à chaque société : sert aux rachats nets et au contrôle des actions.
                 add("shares_outstanding", "EntityCommonStockSharesOutstanding", pd.NaT,
-                    1e3 * (1 + i), unit="shares")
+                    1e7 * (1 + i) * (1 + issue) ** (y - 2009 + q / 4), unit="shares")
                 if annual:
                     # Compte de résultat annuel (T4 déduit = annuel - 9 mois)
                     for concept, tag, frac in (("operating_income", "OperatingIncomeLoss", margin),

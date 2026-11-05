@@ -14,7 +14,7 @@ SITE_DIR = ROOT / "site"
 SITE_DATA_DIR = Path(os.environ.get("SCREENER_SITE_DATA_DIR", SITE_DIR / "data"))
 HISTORY_DIR = Path(os.environ.get("SCREENER_HISTORY_DIR", ROOT / "history"))
 
-FACTORS = ["growth", "earnings", "momentum", "quality", "value", "risk"]
+FACTORS = ["growth", "earnings", "momentum", "quality", "value", "risk", "buyback", "risk_sec"]
 FACTOR_LABELS = {
     "growth": "Croissance",
     "earnings": "Résultats",
@@ -22,7 +22,11 @@ FACTOR_LABELS = {
     "quality": "Qualité",
     "value": "Valorisation",
     "risk": "Risque",
+    "buyback": "Rachats d'actions",
+    "risk_sec": "Risque (au sein du secteur)",
 }
+# Règles de portefeuille qu'un modèle peut fixer pour lui seul (clé « portfolio » du modèle)
+MODEL_PORTFOLIO_KEYS = {"max_sector_fraction", "min_hold_days", "hard_exit_mult"}
 
 
 def _load(name: str) -> dict:
@@ -46,6 +50,15 @@ def vetoes() -> list[dict]:
     return (_load("vetoes.yaml") or {}).get("vetoes") or []
 
 
+def predecessors() -> dict[int, list[int]]:
+    """Nouveau CIK -> anciens CIK dont les comptes complètent l'historique."""
+    p = CONFIG_DIR / "cik_predecessors.yaml"
+    if not p.exists():
+        return {}
+    raw = (_load("cik_predecessors.yaml") or {}).get("predecessors") or {}
+    return {int(k): [int(x) for x in (v or [])] for k, v in raw.items()}
+
+
 def model_weights(base: dict, model: str) -> dict:
     w = {f: float(base["models"][model]["weights"].get(f, 0.0)) for f in FACTORS}
     return w
@@ -58,6 +71,13 @@ def portfolio_params(base: dict, overrides: dict | None = None, model: str | Non
     par le modèle) ou un dictionnaire, éventuellement indexé par modèle."""
     model = model or base["default_model"]
     params = copy.deepcopy(base["portfolio"])
+    params.setdefault("min_hold_days", 0)
+    params.setdefault("hard_exit_mult", 3)
+    own = base["models"][model].get("portfolio") or {}
+    unknown = set(own) - MODEL_PORTFOLIO_KEYS
+    if unknown:
+        raise ValueError(f"Règles de portefeuille inconnues pour {model} : {sorted(unknown)}")
+    params.update(copy.deepcopy(own))
     params["model"] = model
     params["weights"] = model_weights(base, model)
     for key, value in (overrides or {}).items():

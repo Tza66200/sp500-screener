@@ -1,0 +1,67 @@
+name: Vérification ponctuelle V1+
+
+# Branche temporaire : exécute le pipeline complet hors ligne avec V1+ et les corrections
+# de données, sans déployer le site ni enregistrer le cache, puis compare V1+ au code
+# indépendant de l'analyse des corrections. Résultats poussés dans une branche à part.
+on:
+  push:
+    branches: [verif-v1-plus]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verif-v1-plus
+  cancel-in-progress: true
+
+jobs:
+  verif:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SCREENER_SITE_DATA_DIR: ${{ github.workspace }}/verif/site
+      SCREENER_HISTORY_DIR: ${{ github.workspace }}/verif/history
+      VERIF_OUT: ${{ github.workspace }}/verif
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurer le cache des données (lecture seule)
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Pipeline hors ligne
+        run: |
+          set -o pipefail
+          mkdir -p verif
+          python -m screener.pipeline run --offline 2>&1 | tee verif/journal.txt
+
+      - name: Vérification de V1+
+        run: |
+          set -o pipefail
+          python verif_v1_plus.py 2>&1 | tee verif/journal_verif.txt
+
+      - name: Publier les résultats
+        if: always()
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p verif && cd verif
+          git init -q -b verif-v1-plus-resultats
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Résultats de la vérification de V1+"
+          git push -fq "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" verif-v1-plus-resultats

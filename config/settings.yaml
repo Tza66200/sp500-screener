@@ -50,7 +50,9 @@ models:
       V1+ a été conçue le 5 novembre 2026, après une analyse qui avait vu toute la période
       2011-2026 : ses chiffres ne valent pas validation, seul le suivi réel pourra la juger.
       Mesurée en 3 tranches revues à des mois décalés (sans la chance du calendrier), elle
-      rapportait 14,6 % par an de mai 2011 à novembre 2026, contre 14,0 % pour le S&P 500.
+      rapportait 14,7 % par an du 16 mai 2011 au 4 novembre 2026, contre 14,1 % pour le
+      S&P 500, avec une pire baisse de −34,5 % : les chiffres ci-dessous, au calendrier du
+      site, sont plus flatteurs d'environ un point par an.
 default_model: v3
 
 scoring:

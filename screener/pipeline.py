@@ -423,7 +423,10 @@ def run(offline: bool = False) -> None:
                                    protocol["success_horizons_months"], ic_end,
                                    protocol["success_top_n"]) for m in models}
 
-    # Portefeuille modèle courant et revue hypothétique aujourd'hui, par modèle
+    # Portefeuille modèle courant et revue hypothétique : classement du jour, ancienneté des
+    # lignes à la date de la prochaine revue (durée minimale de détention)
+    nrev = next_review(today, settings["portfolio"]["review_months"],
+                       settings["portfolio"]["review_day"])
     portfolios = {}
     for model in models:
         ref = runs[f"{model}:reference"]
@@ -432,10 +435,8 @@ def run(offline: bool = False) -> None:
         entries = {t: h["entry_date"] for t, h in ref.holdings.items()}
         view = live[[f"eligible_{model}", f"rank_{model}", "sector"]].rename(
             columns={f"eligible_{model}": "eligible", f"rank_{model}": "rank"})
-        hypo = review_decision(view, held, ref_params, len(ref.reviews), entries, today)
+        hypo = review_decision(view, held, ref_params, len(ref.reviews), entries, nrev)
         portfolios[model] = {"result": ref, "hypo": hypo, "params": ref_params}
-    nrev = next_review(today, settings["portfolio"]["review_months"],
-                       settings["portfolio"]["review_day"])
 
     audit = A.build(info=info, prices=prices, history=history, live=live, states=states,
                     elig_counts=elig_counts, status=status, dropped=dropped,

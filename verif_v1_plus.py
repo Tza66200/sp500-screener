@@ -122,7 +122,8 @@ def main() -> None:
                    for months in A.SLEEVES]
     tr = A.run_tranches("v1p:tranches", mk, ranks, s, params["cost_per_trade"], sleeve_revs)
     bench = {k: adj[v] for k, v in settings["backtest"]["benchmarks"].items() if v in adj}
-    met = A.measure(tr, mk, bench, rf_daily, tr.all_invested, None)
+    met = A.measure(tr, mk, bench, rf_daily, tr.all_invested,
+                    os.environ.get("VERIF_FIN") or None)
     rep["v1p_tranches"] = {k: met.get(k) for k in ("start", "end", "cagr", "max_drawdown",
                                                    "volatility", "bench_cagr_sp500",
                                                    "bench_cagr_equal_weight", "part_3ans_sp")}

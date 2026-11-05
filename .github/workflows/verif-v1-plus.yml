@@ -22,6 +22,7 @@ jobs:
       SCREENER_SITE_DATA_DIR: ${{ github.workspace }}/verif/site
       SCREENER_HISTORY_DIR: ${{ github.workspace }}/verif/history
       VERIF_OUT: ${{ github.workspace }}/verif
+      VERIF_FIN: "2026-11-04"
     steps:
       - uses: actions/checkout@v4
 

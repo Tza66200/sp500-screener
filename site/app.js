@@ -446,9 +446,9 @@ function renderPortfolio() {
     `${prm.n_positions} lignes à poids égaux, ${prm.max_per_sector} au maximum par secteur.`,
     `Revue le ${prm.review_day} de chaque mois de revue : ${prm.review_months.map((m) => MONTHS[m - 1]).join(", ")}.`,
     `Achat quand un titre entre dans le top ${prm.n_positions} ; conservation tant qu'il reste dans le top ${prm.hold_rank}.`,
-    prm.min_hold_days ? `Une ligne achetée depuis moins de 6 mois n'est pas vendue sur son rang, sauf si elle tombe au-delà du rang ${prm.hold_rank * (prm.hard_exit_mult || 3)}.` : null,
+    prm.min_hold_days ? `Une ligne détenue depuis moins de 6 mois le jour de la revue n'est pas vendue sur son rang, sauf si elle tombe au-delà du rang ${prm.hold_rank * (prm.hard_exit_mult || 3)}.` : null,
     "Vente aussi en cas d'offre de rachat, de sortie de l'indice ou de veto qualitatif.",
-    `Frais simulés : ${NF2.format(prm.cost_per_trade * 100)} % de chaque montant échangé.`,
+    `Frais simulés : ${NF2.format(prm.cost_per_trade * 100)} % de chaque montant échangé.`,
   ].filter(Boolean).map((t) => `<li>${esc(t)}</li>`).join("");
   $("#holdings-title").textContent = `Lignes détenues, ${mlabel()}`;
   $("#holdings-table").innerHTML = `<thead><tr><th>Société</th><th class="hide-sm">Secteur</th><th class="num">Entrée</th>

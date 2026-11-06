@@ -1,0 +1,26 @@
+2026-11-06 23:16:12,268 INFO Univers : 503 membres actuels, historique jusqu'au 2026-08-18
+2026-11-06 23:18:34,318 INFO Deuxième passage individuel pour 2 titres
+2026-11-06 23:18:36,613 INFO Cours : 644/857 titres, dernière séance 2026-11-06
+2026-11-06 23:19:59,531 INFO SEC : 625 dépôts lus, 38 jeux de faits mis à jour, 0 erreurs
+2026-11-06 23:19:59,839 INFO CIK écartés (symbole repris par une autre société) : ADT, APC, BEAM, CCEP, FCPT, KG, LB, LIFE, MI, MMI, NAVI, NE, POM, S, SE, SII, STI, SUN, TE
+2026-11-06 23:20:01,264 INFO États fondamentaux : 36 sociétés à recalculer, 568 en cache
+2026-11-06 23:20:24,948 INFO États fondamentaux : 37381 lignes pour 604 sociétés (25s)
+2026-11-06 23:20:25,185 INFO Symboles réattribués écartés : ADT, APC, BBBY, BEAM, CAM, CSRA, EMC, FB, INFO, JAVA, LB, LIFE, MI, MMI, NE, NFX, PCL, POM, QRVO, S, SATS, SBNY, SE, SHLD, SPLS, STI, TE
+2026-11-06 23:20:27,461 INFO Communiqués de résultats : 50270 dates pour 603 sociétés
+/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/pandas/core/internals/blocks.py:347: RuntimeWarning: invalid value encountered in log
+  result = func(self.values, **kwargs)
+2026-11-06 23:20:32,967 INFO Classement du 2026-11-06 : v1 367 éligibles, v2 367 éligibles, v3 367 éligibles, v1p 365 éligibles sur 503
+2026-11-06 23:20:33,195 INFO Scores historiques : 1/315 (2011-03-15)
+2026-11-06 23:20:44,552 INFO Scores historiques : 51/315 (2013-08-30)
+2026-11-06 23:20:56,210 INFO Scores historiques : 101/315 (2016-03-15)
+2026-11-06 23:21:07,992 INFO Scores historiques : 151/315 (2018-08-31)
+2026-11-06 23:21:20,287 INFO Scores historiques : 201/315 (2021-03-15)
+2026-11-06 23:21:32,855 INFO Scores historiques : 251/315 (2023-08-31)
+2026-11-06 23:21:45,765 INFO Scores historiques : 301/315 (2026-03-16)
+2026-11-06 23:21:49,414 INFO Scores historiques calculés pour 315 dates (76s)
+2026-11-06 23:21:53,752 INFO Backtests v1 : 63 revues pour la référence
+2026-11-06 23:21:57,901 INFO Backtests v2 : 63 revues pour la référence
+2026-11-06 23:22:02,110 INFO Backtests v3 : 63 revues pour la référence
+2026-11-06 23:22:06,534 INFO Backtests v1p : 63 revues pour la référence
+2026-11-06 23:22:31,505 INFO Ventes exportées : 1686 lignes
+2026-11-06 23:22:31,505 INFO Terminé.

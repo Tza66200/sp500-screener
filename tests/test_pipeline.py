@@ -115,6 +115,24 @@ def test_audit_counts_former_members(run_dir):
     assert a["former_quotes_ended"] == 5
 
 
+def test_incomplete_last_session_is_dropped():
+    """Dernière séance sans cours pour les actions (Yahoo, 10/11/2026) : elle est retirée, le
+    classement se fait sur la séance précédente au lieu d'exclure tous les titres."""
+    from screener.pipeline import drop_incomplete_sessions
+
+    idx = pd.bdate_range("2026-11-02", periods=6)
+    close = pd.DataFrame({"A": 1.0, "B": 2.0, "C": 3.0, "^SP500TR": 9.0}, index=idx)
+    close.loc[idx[-1], ["A", "B", "C"]] = float("nan")       # l'indice seul a un cours
+    prices = {n: close.copy() for n in ("adj_close", "close", "volume")}
+    assert drop_incomplete_sessions(prices, ["A", "B", "C", "ABSENT"]) == [idx[-1]]
+    assert all(len(t) == 5 and t.index[-1] == idx[-2] for t in prices.values())
+    # Une séance où la majorité des titres ont un cours est gardée
+    close.loc[idx[-1], ["A", "B"]] = 1.0
+    prices = {n: close.copy() for n in ("adj_close", "close", "volume")}
+    assert drop_incomplete_sessions(prices, ["A", "B", "C"]) == []
+    assert len(prices["close"]) == 6
+
+
 def test_spin_off_is_not_a_buyback(run_dir):
     """T10 : scission fictive enregistrée comme un fractionnement de 1,25 en mars 2026. Ses
     rachats nets restent ceux de ses nombres d'actions publiés (-2 % par an), pas -21,6 %."""

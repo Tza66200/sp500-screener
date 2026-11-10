@@ -243,6 +243,26 @@ def drop_reused_tickers(info: pd.DataFrame, prices: dict, history: pd.DataFrame)
     return dropped
 
 
+def drop_incomplete_sessions(prices: dict, members: list[str], min_share: float = 0.5
+                             ) -> list[pd.Timestamp]:
+    """Retire les dernières séances où moins de la moitié des membres actuels ont un cours.
+
+    Yahoo renvoie parfois la dernière séance sans cours pour les actions : le 10/11/2026 à
+    1 h 19 UTC, celle du 9 n'en avait que pour l'indice. Tous les titres étaient alors exclus
+    du classement du jour (« historique de cours insuffisant ») et toutes les lignes du
+    portefeuille données à vendre. Le classement s'arrête à la dernière séance complète."""
+    cols = [t for t in members if t in prices["close"].columns]
+    dropped: list[pd.Timestamp] = []
+    while cols and len(prices["close"]) > 1 and \
+            prices["close"][cols].iloc[-1].notna().mean() < min_share:
+        last = prices["close"].index[-1]
+        dropped.append(last)
+        for name in ("adj_close", "close", "volume"):
+            tab = prices[name]
+            prices[name] = tab.iloc[:-1] if tab.index[-1] == last else tab[tab.index < last]
+    return dropped
+
+
 # ----------------------------------------------------------------------------
 # Étape 2 : scores
 # ----------------------------------------------------------------------------
@@ -335,6 +355,13 @@ def run(offline: bool = False) -> None:
     dropped = drop_reused_tickers(info, prices, history)
     if dropped:
         log.info("Symboles réattribués écartés : %s", ", ".join(dropped))
+    incomplete = drop_incomplete_sessions(prices, current["ticker"].tolist())
+    if incomplete:
+        note = "Cours du {} incomplets chez Yahoo : classement arrêté au {}".format(
+            ", ".join(d.strftime("%d/%m/%Y") for d in sorted(incomplete)),
+            prices["close"].index[-1].strftime("%d/%m/%Y"))
+        status["warnings"] = [*status.get("warnings", []), note]
+        log.warning(note)
 
     preds = C.predecessors()
     earn = {float(c): merged_earnings_dates(c, preds) for c in info["cik"].dropna().unique()}

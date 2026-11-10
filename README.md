@@ -103,7 +103,9 @@ python -m pytest -q
 - Yahoo Finance ne fournit généralement pas les cours des sociétés retirées de la cote :
   le backtest les omet, ce qui l'embellit. L'onglet Données chiffre ce biais.
 - yfinance est une bibliothèque non officielle ; en cas de panne, la série précédente est
-  conservée et signalée.
+  conservée et signalée. Si la dernière séance arrive sans cours pour la majorité des membres
+  actuels, elle est ignorée : le classement s'arrête à la dernière séance complète et le site
+  l'indique.
 - Pas d'estimations d'analystes : la croissance repose sur les chiffres publiés.
 - Financières et immobilier exclus en V1.
 - Le filtre « offre de rachat » n'est appliqué qu'au classement du jour.

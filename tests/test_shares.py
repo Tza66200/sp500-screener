@@ -106,6 +106,29 @@ def test_net_issuance_keeps_real_issuance_without_split():
     assert abs(FT.net_issuance(hist(rows), small, day("2025-05-20")) - 0.015) < 1e-12
 
 
+def test_net_issuance_unknown_when_yahoo_misdescribes_the_operation():
+    """Honeywell, 29 juin 2026 : scission de l'aéronautique et regroupement d'actions 1 pour 2
+    le même jour. Le nombre d'actions passe de 634 à 317 millions, et Yahoo ne donne qu'un
+    ratio combiné de 0,954 : ce n'est pas un rachat de près de la moitié des actions, et la
+    vraie variation ne peut pas être reconstituée. La mesure reste vide."""
+    rows = [(u, n * 1e6, s, False) for u, n, s in (
+        ("2025-04-25", 636.4, "2025-04-11"), ("2025-07-25", 635.5, "2025-07-11"),
+        ("2025-10-24", 634.9, "2025-10-10"), ("2026-02-13", 634.6, "2026-01-30"),
+        ("2026-04-24", 634.2, "2026-04-10"), ("2026-07-24", 318.9, "2026-07-10"),
+        ("2026-10-23", 320.4, "2026-10-09"))]
+    combined = (np.array([day("2026-06-29")]), np.array([0.954]))
+    for d in ("2026-07-30", "2026-11-09"):
+        assert np.isnan(FT.net_issuance(hist(rows), combined, day(d))), d
+    # Avant l'opération, la mesure est celle des nombres publiés
+    v = FT.net_issuance(hist(rows), combined, day("2026-05-10"))
+    assert abs(v - (634.2 / 636.4 - 1)) < 1e-12
+    # Si Yahoo liste le regroupement à part (0,5 le 29, 0,954 la veille), il est confirmé par
+    # les nombres publiés et la variation redevient calculable : +0,9 %
+    apart = (np.array([day("2026-06-28"), day("2026-06-29")]), np.array([0.954 * 0.5, 0.5]))
+    v = FT.net_issuance(hist(rows), apart, day("2026-11-09"))
+    assert abs(v - (320.4 / (634.9 * 0.5) - 1)) < 1e-12
+
+
 def test_net_issuance_needs_same_source_and_plausible_ratio():
     rows = [(u, 100.0, s, k >= 4) for k, (u, s) in enumerate(QUARTERS)]   # source changée
     assert np.isnan(FT.net_issuance(hist(rows), None, day("2025-05-20")))

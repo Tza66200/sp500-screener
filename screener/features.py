@@ -67,7 +67,11 @@ _NO_DATE = np.int64(-10 ** 9)
 # société, lui, ne change pas. Pour les rachats nets, un ratio n'est donc appliqué que si les
 # nombres d'actions publiés le confirment (voir real_split_factor).
 SPLIT_LOOKBACK_DAYS = 100    # un nombre daté peu avant peut déjà être sur la nouvelle base
-SPLIT_EARLY_MIN = 1.25       # ... admis seulement pour un fractionnement d'au moins 5 pour 4
+# D'un rapport au suivant, hors fractionnement, le nombre d'actions ne varie pas d'un facteur
+# supérieur à SPLIT_TOL : c'est l'écart admis entre un saut et le ratio qui l'explique, et le
+# saut au-delà duquel une opération que Yahoo décrit mal rend la mesure inconnue (Honeywell le
+# 2026-06-29 : scission et regroupement 1 pour 2 le même jour, ratio appliqué de 0,954).
+SPLIT_TOL = 1.25
 
 
 def _days(ts) -> int:
@@ -90,19 +94,24 @@ def split_factors(splits: tuple | None, days: np.ndarray) -> np.ndarray:
 
 def real_split_factor(sh: np.ndarray, sd: np.ndarray, idx: np.ndarray, splits: tuple | None,
                       j: int, k: int, day: int) -> float:
-    """Produit des fractionnements réels entre les nombres d'actions des états j et k.
+    """Produit des fractionnements réels entre les nombres d'actions des états j et k, ou NaN
+    si une opération de la liste Yahoo s'accompagne d'un saut qu'elle n'explique pas.
 
     Un fractionnement de la liste Yahoo est tenu pour réel si les nombres d'actions publiés
-    font, autour de sa date, un saut plus proche de son ratio que de 1 ; sinon c'est une
-    scission (ou une donnée fausse) et le nombre d'actions n'a pas changé.
+    font, autour de sa date, un saut plus proche de son ratio que de 1, à SPLIT_TOL près ;
+    sinon c'est une scission (ou une donnée fausse) et le nombre d'actions n'a pas changé.
     1. Le saut est d'abord cherché entre les deux nombres qui encadrent la date. Si plusieurs
        fractionnements tombent entre les deux mêmes nombres, on retient la combinaison de
        ratios qui explique le mieux le saut (aucune, si c'est « pas de saut »).
     2. À défaut, il est cherché un rapport plus tôt, quand le nombre daté juste avant (de moins
        de SPLIT_LOOKBACK_DAYS jours) est déjà sur la nouvelle base : une moyenne diluée publiée
        après le fractionnement est corrigée même pour un trimestre clos avant. Réservé aux
-       ratios d'au moins SPLIT_EARLY_MIN (ou leur inverse) : en dessous, une simple variation
+       ratios d'au moins SPLIT_TOL (ou leur inverse) : en dessous, une simple variation
        trimestrielle du nombre d'actions suffirait à « confirmer » un petit ratio de scission.
+    3. Si une opération reste non confirmée alors que le nombre d'actions fait, à l'un de ces
+       deux endroits, un saut de plus de SPLIT_TOL que rien n'explique, Yahoo décrit mal ce
+       qui s'est passé (scission et regroupement d'actions le même jour, sous un seul ratio) :
+       la variation est inconnue, jamais estimée.
     Seuls comptent les fractionnements déjà intervenus à `day`.
 
     `idx` : états utilisables (nombre valide, même source que k), tous antérieurs ou égaux à k.
@@ -115,6 +124,7 @@ def real_split_factor(sh: np.ndarray, sd: np.ndarray, idx: np.ndarray, splits: t
                      np.isfinite(ratios) & (ratios > 0))[0]
     if not len(use):
         return 1.0
+    tol = math.log(SPLIT_TOL) + 1e-9
     logs = {int(e): math.log(ratios[e]) for e in use}
     # Un état par date de nombre d'actions (le dernier connu), dates croissantes
     order = np.lexsort((idx, sd[idx]))
@@ -132,26 +142,29 @@ def real_split_factor(sh: np.ndarray, sd: np.ndarray, idx: np.ndarray, splits: t
     for q, events in before.items():
         best: tuple = ()
         if 0 <= q < len(jumps):
-            events = sorted(events, key=lambda e: -abs(logs[e]))[:6]
+            largest = sorted(events, key=lambda e: -abs(logs[e]))[:6]
             best_err = abs(jumps[q])
-            for n in range(1, len(events) + 1):
-                for combo in itertools.combinations(events, n):
+            for n in range(1, len(largest) + 1):
+                for combo in itertools.combinations(largest, n):
                     err = abs(jumps[q] - sum(logs[e] for e in combo))
-                    if err < best_err:
+                    if err < best_err and err <= tol:
                         best, best_err = combo, err
             for e in best:
                 found[e] = q
                 explained[q] += logs[e]
-        pending += [e for e in before[q] if e not in best]
-    early_min = math.log(SPLIT_EARLY_MIN) - 1e-9
-    for e in sorted(pending, key=lambda e: -abs(logs[e])):
-        q = int(np.searchsorted(dates, d[e], side="left")) - 1
-        if abs(logs[e]) >= early_min and 1 <= q <= len(jumps) and \
-                d[e] - dates[q] < SPLIT_LOOKBACK_DAYS:
+        pending += [(e, q) for e in events if e not in best]
+    doubtful: set[int] = set()                   # sauts voisins d'une opération non confirmée
+    for e, q in sorted(pending, key=lambda x: -abs(logs[x[0]])):
+        early = 1 <= q <= len(jumps) and d[e] - dates[q] < SPLIT_LOOKBACK_DAYS
+        if early and abs(logs[e]) >= tol - 2e-9:
             rest = jumps[q - 1] - explained[q - 1]
-            if abs(rest - logs[e]) < abs(rest):
+            if abs(rest - logs[e]) < abs(rest) and abs(rest - logs[e]) <= tol:
                 found[e] = q - 1
                 explained[q - 1] += logs[e]
+                continue
+        doubtful.update(c for c in ((q, q - 1) if early else (q,)) if 0 <= c < len(jumps))
+    if any(pj <= c < pk and abs(jumps[c] - explained[c]) > tol for c in doubtful):
+        return np.nan
     return float(np.prod([ratios[e] for e, q in found.items() if pj <= q < pk]))
 
 

@@ -37,6 +37,9 @@ holdout:
 # effet sur les résultats : les scissions, que Yahoo présente comme des fractionnements, ne
 # sont plus comptées comme des rachats d'actions (voir settings.yaml). Ni les pondérations,
 # ni les règles, ni les critères ne changent.
+# Complément du 11/11/2026, après lecture des résultats de cette correction mais sans en tenir
+# compte : la mesure reste vide quand Yahoo décrit mal une opération (Honeywell, voir
+# settings.yaml).
 models: [v1, v2, v3, v1p]
 
 # Variantes comparées à la référence de chaque modèle (au plus trois)

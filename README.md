@@ -116,6 +116,9 @@ python -m pytest -q
   fractionnements. Pour les rachats nets, un ratio n'est appliqué au nombre d'actions que si
   les nombres publiés font un saut du même ordre autour de sa date ; sinon le nombre d'actions
   n'a pas changé (correction du 10/11/2026). Un très petit ratio (moins de 1,05 environ) peut
-  encore être confondu avec une émission d'actions du même ordre.
+  encore être confondu avec une émission d'actions du même ordre. Quand une opération
+  s'accompagne d'un saut de plus de 25 % du nombre d'actions que son ratio n'explique pas
+  (Honeywell le 29/06/2026 : scission et regroupement d'actions 1 pour 2 le même jour), la
+  mesure reste vide pendant un an.
 
 Police Archivo sous licence SIL Open Font License (`site/fonts/OFL.txt`).

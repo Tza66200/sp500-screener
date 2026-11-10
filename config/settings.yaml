@@ -3,7 +3,7 @@
 # (commit Git avec justification) et ne doit pas être guidée par les résultats
 # de la période réservée (voir protocol.yaml).
 
-model_version: "2026-11-10"
+model_version: "2026-11-11"
 
 universe:
   # V1 : banques, assureurs et immobilier exclus (métriques EV/EBITDA, FCF, ROIC inadaptées).
@@ -36,6 +36,15 @@ universe:
 #      06/11/2026, au lieu d'environ 126). Un ratio n'est désormais appliqué que si les
 #      nombres d'actions publiés le confirment (features.real_split_factor). Seul le facteur
 #      « rachats » change, donc seule V1+ ; V1, V2 et V3 sont inchangées.
+#      Complément du 11/11/2026, à la suite d'un contrôle des valeurs corrigées. Il vient après
+#      la lecture des résultats de la correction (V1+ passée de 15,7 % à 16,7 % par an au
+#      06/11/2026), mais il répond à une valeur fausse, pas à ces résultats : Honeywell a
+#      scindé son aéronautique et regroupé ses actions 1 pour 2 le même jour (29/06/2026).
+#      D'après les valeurs publiées, les cours Yahoo du screener n'en gardent qu'un ratio de
+#      0,954, et la correction donnait Honeywell pour avoir racheté 48 % de ses titres (rang
+#      45 de V1+ le 10/11/2026, contre 159 la veille). Quand une opération
+#      s'accompagne d'un saut de plus de 25 % du nombre d'actions que son ratio n'explique
+#      pas, la mesure reste vide, comme c'était le cas pour Honeywell avant la correction.
 models:
   v1:
     label: "V1 hybride"

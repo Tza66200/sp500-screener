@@ -36,8 +36,10 @@ def build(root: Path, n: int = 60, seed: int = 7, end: str = "2026-10-15") -> No
     adj.to_parquet(root / "prices" / "adj_close.parquet")
     adj.to_parquet(root / "prices" / "close.parquet")
     vol.to_parquet(root / "prices" / "volume.parquet")
-    pd.DataFrame({"date": pd.to_datetime([]), "ticker": [], "ratio": []}).to_parquet(
-        root / "prices" / "splits.parquet", index=False)
+    # Scission fictive de T10 : Yahoo l'enregistre comme un fractionnement de 1,25 alors que le
+    # nombre d'actions de la société ne change pas (voir test_spin_off_is_not_a_buyback).
+    pd.DataFrame({"date": pd.to_datetime(["2026-03-02"]), "ticker": ["T10"],
+                  "ratio": [1.25]}).to_parquet(root / "prices" / "splits.parquet", index=False)
 
     # Composition
     first = tickers[:50]

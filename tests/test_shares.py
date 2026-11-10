@@ -41,6 +41,71 @@ def test_net_issuance_neutral_to_splits():
     assert abs(v) < 1e-12
 
 
+def test_net_issuance_ignores_spin_offs():
+    """Scission (FedEx Freight, 1er juin 2026) : Yahoo l'enregistre comme un fractionnement de
+    1,241, mais le nombre d'actions de la société mère ne change pas. Ce n'est pas un rachat."""
+    rows = [(u, n * 1e6, s, False) for u, n, s in (
+        ("2025-07-18", 236.40, "2025-07-14"), ("2025-09-19", 236.00, "2025-09-15"),
+        ("2025-12-19", 235.60, "2025-12-15"), ("2026-03-20", 235.20, "2026-03-16"),
+        ("2026-07-21", 234.60, "2026-07-16"), ("2026-09-22", 234.25, "2026-09-17"))]
+    spin = (np.array([day("2026-06-01")]), np.array([1.241]))
+    v = FT.net_issuance(hist(rows), spin, day("2026-11-06"))
+    assert abs(v - (234.25 / 236.00 - 1)) < 1e-12            # -0,74 %, et non -20 %
+    v = FT.net_issuance(hist(rows), spin, day("2026-07-25"))  # premier nombre après la scission
+    assert abs(v - (234.60 / 236.40 - 1)) < 1e-12
+
+
+def test_net_issuance_split_already_reflected_before_its_date():
+    """Fractionnement 2:1 le 2024-09-01, mais le nombre daté du 2024-08-01, publié après, est
+    déjà sur la nouvelle base (moyenne diluée corrigée rétroactivement) : le saut est constaté
+    un rapport plus tôt que la date, et la variation reste nulle à toutes les dates."""
+    quarters = [("2023-05-10", "2023-05-01"), ("2023-08-10", "2023-08-01"),
+                ("2023-11-10", "2023-11-01")] + QUARTERS + \
+        [("2025-08-10", "2025-08-01"), ("2025-11-10", "2025-11-01")]
+    quarters[5] = ("2024-09-10", "2024-08-01")              # publié après le fractionnement
+    rows = [(u, 100.0 * (2 if s >= "2024-08-01" else 1), s, True) for u, s in quarters]
+    splits = (np.array([day("2024-09-01")]), np.array([2.0]))
+    for d in ("2024-08-20", "2024-09-20", "2024-11-20", "2025-05-20", "2025-08-20", "2025-11-20"):
+        assert abs(FT.net_issuance(hist(rows), splits, day(d))) < 1e-12, d
+
+
+def test_net_issuance_split_and_spin_off_in_the_same_year():
+    """Un vrai fractionnement 2:1 et une scission la même année : seul le premier compte."""
+    rows = [(u, 100.0 * (2 if s >= "2024-09-01" else 1) * (0.99 ** k), s, False)
+            for k, (u, s) in enumerate(QUARTERS)]
+    splits = (np.array([day("2024-09-01"), day("2025-01-15")]), np.array([2.0 * 1.3, 1.3]))
+    v = FT.net_issuance(hist(rows), splits, day("2025-05-20"))
+    assert abs(v - (0.99 ** 4 - 1)) < 1e-12
+    # Les deux le même trimestre : le saut publié (x2) désigne le fractionnement, pas la scission
+    same = (np.array([day("2024-09-01"), day("2024-10-01")]), np.array([2.0 * 1.3, 1.3]))
+    assert abs(FT.net_issuance(hist(rows), same, day("2025-05-20")) - (0.99 ** 4 - 1)) < 1e-12
+
+
+def test_net_issuance_reverse_split_and_future_split():
+    # Regroupement 1 pour 8 le 2024-09-01 : le nombre publié est divisé par 8
+    rows = [(u, 800.0 / (8 if s >= "2024-09-01" else 1), s, False) for u, s in QUARTERS]
+    reverse = (np.array([day("2024-09-01")]), np.array([0.125]))
+    assert abs(FT.net_issuance(hist(rows), reverse, day("2025-05-20"))) < 1e-12
+    # Fractionnement postérieur à la date de calcul : sans effet sur les nombres déjà publiés
+    flat = [(u, 100.0, s, False) for u, s in QUARTERS]
+    later = (np.array([day("2025-06-15")]), np.array([4.0]))
+    assert abs(FT.net_issuance(hist(flat), later, day("2025-05-20"))) < 1e-12
+
+
+def test_net_issuance_keeps_real_issuance_without_split():
+    # Émission de 30 % d'actions (acquisition payée en titres), aucun fractionnement listé
+    rows = [(u, 100.0 * (1.3 if k >= 3 else 1), s, False) for k, (u, s) in enumerate(QUARTERS)]
+    assert abs(FT.net_issuance(hist(rows), None, day("2025-05-20")) - 0.3) < 1e-12
+    # Même émission l'année d'une scission (ratio 1,2 un autre trimestre) : elle reste visible
+    spin = (np.array([day("2025-03-01")]), np.array([1.2]))
+    assert abs(FT.net_issuance(hist(rows), spin, day("2025-05-20")) - 0.3) < 1e-12
+    # Petite scission (ratio 1,02) juste après un trimestre où le nombre d'actions a monté de
+    # 1,5 % : cette hausse n'est pas prise pour un fractionnement déjà reflété
+    rows = [(u, 100.0 * (1.015 if k >= 5 else 1), s, False) for k, (u, s) in enumerate(QUARTERS)]
+    small = (np.array([day("2025-05-15")]), np.array([1.02]))
+    assert abs(FT.net_issuance(hist(rows), small, day("2025-05-20")) - 0.015) < 1e-12
+
+
 def test_net_issuance_needs_same_source_and_plausible_ratio():
     rows = [(u, 100.0, s, k >= 4) for k, (u, s) in enumerate(QUARTERS)]   # source changée
     assert np.isnan(FT.net_issuance(hist(rows), None, day("2025-05-20")))

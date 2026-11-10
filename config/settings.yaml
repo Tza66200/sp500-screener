@@ -3,7 +3,7 @@
 # (commit Git avec justification) et ne doit pas être guidée par les résultats
 # de la période réservée (voir protocol.yaml).
 
-model_version: "2026-11-05"
+model_version: "2026-11-10"
 
 universe:
   # V1 : banques, assureurs et immobilier exclus (métriques EV/EBITDA, FCF, ROIC inadaptées).
@@ -28,6 +28,14 @@ universe:
 #      plus par secteur, 6 mois de détention minimale (sauf rang > 150).
 #      Règles de portefeuille propres à un modèle : clé « portfolio », qui complète la
 #      section « portfolio » commune.
+#      Correction de données du 10/11/2026, avant la première revue suivie (15/11/2026) et
+#      sans avoir regardé son effet sur les résultats : Yahoo présente les scissions comme des
+#      fractionnements (ratio 1,241 pour FedEx le 01/06/2026, 1,272 pour Becton Dickinson le
+#      10/02/2026), et ce ratio était appliqué au nombre d'actions. La société mère semblait
+#      alors avoir racheté 20 à 25 % de ses titres pendant un an (rang 12 de V1+ pour FedEx au
+#      06/11/2026, au lieu d'environ 126). Un ratio n'est désormais appliqué que si les
+#      nombres d'actions publiés le confirment (features.real_split_factor). Seul le facteur
+#      « rachats » change, donc seule V1+ ; V1, V2 et V3 sont inchangées.
 models:
   v1:
     label: "V1 hybride"
@@ -53,6 +61,10 @@ models:
       rapportait 14,8 % par an du 16 mai 2011 au 4 novembre 2026, contre 14,1 % pour le
       S&P 500, avec une pire baisse de −34,0 % : les chiffres ci-dessous, au calendrier du
       site, sont plus flatteurs d'environ un point par an.
+      Le 10 novembre 2026, avant la première revue suivie, le calcul des rachats a été
+      corrigé : les scissions (FedEx Freight, Becton Dickinson…) étaient comptées comme des
+      rachats de 20 à 25 % des actions. Les chiffres ci-dessous tiennent compte de cette
+      correction ; la mesure en 3 tranches citée plus haut date d'avant et reste à refaire.
 default_model: v3
 
 scoring:

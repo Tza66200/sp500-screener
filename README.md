@@ -112,5 +112,10 @@ python -m pytest -q
   existe mais reste introuvable, elle est déclarée inconnue plutôt que nulle.
 - La SEC intègre parfois un rapport à ses données XBRL avec plusieurs semaines de retard ;
   la fiche de la société le signale.
+- Yahoo présente les scissions (FedEx Freight en juin 2026, par exemple) comme des
+  fractionnements. Pour les rachats nets, un ratio n'est appliqué au nombre d'actions que si
+  les nombres publiés font un saut du même ordre autour de sa date ; sinon le nombre d'actions
+  n'a pas changé (correction du 10/11/2026). Un très petit ratio (moins de 1,05 environ) peut
+  encore être confondu avec une émission d'actions du même ordre.
 
 Police Archivo sous licence SIL Open Font License (`site/fonts/OFL.txt`).

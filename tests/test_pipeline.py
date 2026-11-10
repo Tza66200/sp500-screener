@@ -115,6 +115,15 @@ def test_audit_counts_former_members(run_dir):
     assert a["former_quotes_ended"] == 5
 
 
+def test_spin_off_is_not_a_buyback(run_dir):
+    """T10 : scission fictive enregistrée comme un fractionnement de 1,25 en mars 2026. Ses
+    rachats nets restent ceux de ses nombres d'actions publiés (-2 % par an), pas -21,6 %."""
+    r = load(run_dir, "ranking.json")["rows"]
+    t10 = next(x for x in r if x["ticker"] == "T10")
+    assert t10["metrics"]["net_iss"] == pytest.approx(-0.02, abs=1e-6)
+    assert t10["extra"]["market_cap"] > 0
+
+
 def test_v1p_factors_in_ranking(run_dir):
     r = load(run_dir, "ranking.json")["rows"]
     meta = load(run_dir, "meta.json")

@@ -33,6 +33,10 @@ holdout:
 # validation. Elle sera jugée sur le suivi en parallèle, à partir de la revue du 15/11/2026,
 # pendant au moins 12 mois. Ses pondérations de robustesse reprennent celles de V1, la
 # croissance étant remplacée par les rachats nets.
+# Correction de données du 10/11/2026, avant cette première revue et sans avoir regardé son
+# effet sur les résultats : les scissions, que Yahoo présente comme des fractionnements, ne
+# sont plus comptées comme des rachats d'actions (voir settings.yaml). Ni les pondérations,
+# ni les règles, ni les critères ne changent.
 models: [v1, v2, v3, v1p]
 
 # Variantes comparées à la référence de chaque modèle (au plus trois)

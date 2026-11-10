@@ -1,6 +1,7 @@
 """Calcul des mesures à une date donnée (cours + fondamentaux connus à cette date)."""
 from __future__ import annotations
 
+import itertools
 import logging
 import math
 from dataclasses import dataclass, field
@@ -60,6 +61,13 @@ SHARES_JUMP = 4.0
 NET_ISS_RANGE = (0.5, 3.0)   # au-delà, variation sur un an tenue pour une erreur de données
 DILUTED_FLAG = "moyenne diluée"
 _NO_DATE = np.int64(-10 ** 9)
+# Yahoo range parmi les fractionnements les scissions (distribution des actions d'une filiale),
+# avec pour ratio la baisse du cours : 1,241 pour FedEx le 2026-06-01, 1,272 pour Becton
+# Dickinson le 2026-02-10. Le cours ajusté en tient compte, mais le nombre d'actions de la
+# société, lui, ne change pas. Pour les rachats nets, un ratio n'est donc appliqué que si les
+# nombres d'actions publiés le confirment (voir real_split_factor).
+SPLIT_LOOKBACK_DAYS = 100    # un nombre daté peu avant peut déjà être sur la nouvelle base
+SPLIT_EARLY_MIN = 1.25       # ... admis seulement pour un fractionnement d'au moins 5 pour 4
 
 
 def _days(ts) -> int:
@@ -80,10 +88,79 @@ def split_factors(splits: tuple | None, days: np.ndarray) -> np.ndarray:
     return out
 
 
+def real_split_factor(sh: np.ndarray, sd: np.ndarray, idx: np.ndarray, splits: tuple | None,
+                      j: int, k: int, day: int) -> float:
+    """Produit des fractionnements réels entre les nombres d'actions des états j et k.
+
+    Un fractionnement de la liste Yahoo est tenu pour réel si les nombres d'actions publiés
+    font, autour de sa date, un saut plus proche de son ratio que de 1 ; sinon c'est une
+    scission (ou une donnée fausse) et le nombre d'actions n'a pas changé.
+    1. Le saut est d'abord cherché entre les deux nombres qui encadrent la date. Si plusieurs
+       fractionnements tombent entre les deux mêmes nombres, on retient la combinaison de
+       ratios qui explique le mieux le saut (aucune, si c'est « pas de saut »).
+    2. À défaut, il est cherché un rapport plus tôt, quand le nombre daté juste avant (de moins
+       de SPLIT_LOOKBACK_DAYS jours) est déjà sur la nouvelle base : une moyenne diluée publiée
+       après le fractionnement est corrigée même pour un trimestre clos avant. Réservé aux
+       ratios d'au moins SPLIT_EARLY_MIN (ou leur inverse) : en dessous, une simple variation
+       trimestrielle du nombre d'actions suffirait à « confirmer » un petit ratio de scission.
+    Seuls comptent les fractionnements déjà intervenus à `day`.
+
+    `idx` : états utilisables (nombre valide, même source que k), tous antérieurs ou égaux à k.
+    """
+    if splits is None:
+        return 1.0
+    d, suf = splits
+    ratios = suf / np.append(suf[1:], 1.0)
+    use = np.nonzero((d <= day) & (d > sd[j]) & (d < sd[k] + SPLIT_LOOKBACK_DAYS) &
+                     np.isfinite(ratios) & (ratios > 0))[0]
+    if not len(use):
+        return 1.0
+    logs = {int(e): math.log(ratios[e]) for e in use}
+    # Un état par date de nombre d'actions (le dernier connu), dates croissantes
+    order = np.lexsort((idx, sd[idx]))
+    idx = idx[order]
+    pts = idx[np.append(sd[idx][1:] != sd[idx][:-1], True)]
+    dates = sd[pts]
+    jumps = np.diff(np.log(sh[pts]))             # saut entre pts[q] et pts[q + 1]
+    pj, pk = int(np.searchsorted(dates, sd[j])), int(np.searchsorted(dates, sd[k]))
+    explained = np.zeros(len(jumps))             # part de chaque saut attribuée à un ratio
+    found: dict[int, int] = {}                   # fractionnement réel -> saut où il est constaté
+    before: dict[int, list[int]] = {}            # fractionnements par dernier nombre daté avant
+    for e in logs:
+        before.setdefault(int(np.searchsorted(dates, d[e], side="left")) - 1, []).append(e)
+    pending = []
+    for q, events in before.items():
+        best: tuple = ()
+        if 0 <= q < len(jumps):
+            events = sorted(events, key=lambda e: -abs(logs[e]))[:6]
+            best_err = abs(jumps[q])
+            for n in range(1, len(events) + 1):
+                for combo in itertools.combinations(events, n):
+                    err = abs(jumps[q] - sum(logs[e] for e in combo))
+                    if err < best_err:
+                        best, best_err = combo, err
+            for e in best:
+                found[e] = q
+                explained[q] += logs[e]
+        pending += [e for e in before[q] if e not in best]
+    early_min = math.log(SPLIT_EARLY_MIN) - 1e-9
+    for e in sorted(pending, key=lambda e: -abs(logs[e])):
+        q = int(np.searchsorted(dates, d[e], side="left")) - 1
+        if abs(logs[e]) >= early_min and 1 <= q <= len(jumps) and \
+                d[e] - dates[q] < SPLIT_LOOKBACK_DAYS:
+            rest = jumps[q - 1] - explained[q - 1]
+            if abs(rest - logs[e]) < abs(rest):
+                found[e] = q - 1
+                explained[q - 1] += logs[e]
+    return float(np.prod([ratios[e] for e, q in found.items() if pj <= q < pk]))
+
+
 def net_issuance(hist: tuple | None, splits: tuple | None, day: int) -> float:
-    """Variation sur un an du nombre d'actions, corrigée des fractionnements : dernier nombre
-    connu à `day` (daté de moins de 200 jours) comparé au nombre connu un an plus tôt
-    (à 45 jours près), de même source (page de garde ou moyenne diluée)."""
+    """Variation sur un an du nombre d'actions, corrigée des fractionnements réels : dernier
+    nombre connu à `day` (daté de moins de 200 jours) comparé au nombre connu un an plus tôt
+    (à 45 jours près), de même source (page de garde ou moyenne diluée). Les scissions, que
+    Yahoo présente comme des fractionnements, ne modifient pas le nombre d'actions : elles
+    sont écartées (voir real_split_factor)."""
     if hist is None:
         return np.nan
     u, sh, sd, dil = hist
@@ -91,14 +168,14 @@ def net_issuance(hist: tuple | None, splits: tuple | None, day: int) -> float:
     if k < 0 or not (np.isfinite(sh[k]) and sh[k] > 0) or sd[k] < 0 or day - sd[k] > 200:
         return np.nan
     gap = np.abs(sd[:k + 1] - (sd[k] - 365))
-    ok = (sd[:k + 1] >= 0) & np.isfinite(sh[:k + 1]) & (sh[:k + 1] > 0) & \
-        (dil[:k + 1] == dil[k]) & (gap <= 45)
+    usable = (sd[:k + 1] >= 0) & np.isfinite(sh[:k + 1]) & (sh[:k + 1] > 0) & \
+        (dil[:k + 1] == dil[k])
+    ok = usable & (gap <= 45)
     if not ok.any():
         return np.nan
     cand = np.nonzero(ok)[0]
     j = int(cand[gap[cand] == gap[cand].min()][-1])
-    f = split_factors(splits, np.array([sd[k], sd[j]]))
-    ratio = sh[k] * f[0] / (sh[j] * f[1])
+    ratio = sh[k] / (sh[j] * real_split_factor(sh, sd, np.nonzero(usable)[0], splits, j, k, day))
     if not (NET_ISS_RANGE[0] <= ratio <= NET_ISS_RANGE[1]):
         return np.nan
     return float(ratio - 1.0)

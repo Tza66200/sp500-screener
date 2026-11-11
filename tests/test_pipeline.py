@@ -116,21 +116,29 @@ def test_audit_counts_former_members(run_dir):
 
 
 def test_incomplete_last_session_is_dropped():
-    """Dernière séance sans cours pour les actions (Yahoo, 10/11/2026) : elle est retirée, le
-    classement se fait sur la séance précédente au lieu d'exclure tous les titres."""
+    """Dernière séance sans cours pour tout ou partie des actions (Yahoo, 10 et 11/11/2026) :
+    elle est retirée, le classement se fait sur la dernière séance complète."""
     from screener.pipeline import drop_incomplete_sessions
 
-    idx = pd.bdate_range("2026-11-02", periods=6)
-    close = pd.DataFrame({"A": 1.0, "B": 2.0, "C": 3.0, "^SP500TR": 9.0}, index=idx)
-    close.loc[idx[-1], ["A", "B", "C"]] = float("nan")       # l'indice seul a un cours
-    prices = {n: close.copy() for n in ("adj_close", "close", "volume")}
-    assert drop_incomplete_sessions(prices, ["A", "B", "C", "ABSENT"]) == [idx[-1]]
-    assert all(len(t) == 5 and t.index[-1] == idx[-2] for t in prices.values())
-    # Une séance où la majorité des titres ont un cours est gardée
-    close.loc[idx[-1], ["A", "B"]] = 1.0
-    prices = {n: close.copy() for n in ("adj_close", "close", "volume")}
-    assert drop_incomplete_sessions(prices, ["A", "B", "C"]) == []
-    assert len(prices["close"]) == 6
+    idx = pd.bdate_range("2026-11-02", periods=7)
+    names = [f"S{i:02d}" for i in range(100)]
+    full = pd.DataFrame(1.0, index=idx, columns=names + ["^SP500TR"])
+
+    def run(missing, days=1):
+        close = full.copy()
+        close.loc[idx[-days:], missing] = float("nan")
+        prices = {n: close.copy() for n in ("adj_close", "close", "volume")}
+        return drop_incomplete_sessions(prices, names + ["ABSENT"]), prices
+
+    dropped, prices = run(names)                 # 10/11 : l'indice seul a un cours
+    assert dropped == [idx[-1]]
+    assert all(len(t) == 6 and t.index[-1] == idx[-2] for t in prices.values())
+    dropped, prices = run(names[55:])            # 11/11 : coupure pendant le téléchargement
+    assert dropped == [idx[-1]] and len(prices["close"]) == 6
+    dropped, prices = run(names[90:], days=2)    # deux séances incomplètes de suite
+    assert dropped == [idx[-1], idx[-2]] and prices["close"].index[-1] == idx[-3]
+    dropped, prices = run(names[:1])             # un seul titre sans cours : séance gardée
+    assert dropped == [] and len(prices["close"]) == 7
 
 
 def test_spin_off_is_not_a_buyback(run_dir):

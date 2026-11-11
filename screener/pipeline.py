@@ -243,18 +243,28 @@ def drop_reused_tickers(info: pd.DataFrame, prices: dict, history: pd.DataFrame)
     return dropped
 
 
-def drop_incomplete_sessions(prices: dict, members: list[str], min_share: float = 0.5
-                             ) -> list[pd.Timestamp]:
-    """Retire les dernières séances où moins de la moitié des membres actuels ont un cours.
+SESSION_MIN_SHARE = 0.98     # part des membres cotés d'habitude qui doivent l'être à la séance
 
-    Yahoo renvoie parfois la dernière séance sans cours pour les actions : le 10/11/2026 à
-    1 h 19 UTC, celle du 9 n'en avait que pour l'indice. Tous les titres étaient alors exclus
-    du classement du jour (« historique de cours insuffisant ») et toutes les lignes du
-    portefeuille données à vendre. Le classement s'arrête à la dernière séance complète."""
+
+def drop_incomplete_sessions(prices: dict, members: list[str],
+                             min_share: float = SESSION_MIN_SHARE) -> list[pd.Timestamp]:
+    """Retire les dernières séances où il manque le cours de plus de 2 % des membres actuels
+    cotés d'habitude (médiane des cinq séances précédentes).
+
+    À 20 h à New York, Yahoo cesse un moment de renvoyer les cours de la séance du jour pour
+    les actions. Le 10/11/2026 à 1 h 19 UTC, la séance du 9 n'en avait que pour l'indice : tous
+    les titres étaient exclus du classement du jour (« historique de cours insuffisant ») et
+    toutes les lignes du portefeuille données à vendre. Le 11/11/2026 à 1 h 00 UTC, la coupure
+    est tombée pendant le téléchargement : cours présents de A à K, absents ensuite, et 193
+    titres classés au lieu de 365. Un classement sur une séance incomplète est faux : il
+    s'arrête à la dernière séance complète."""
     cols = [t for t in members if t in prices["close"].columns]
     dropped: list[pd.Timestamp] = []
-    while cols and len(prices["close"]) > 1 and \
-            prices["close"][cols].iloc[-1].notna().mean() < min_share:
+    while cols and len(prices["close"]) > 1:
+        counts = prices["close"][cols].iloc[-6:].notna().sum(axis=1)
+        usual = float(counts.iloc[:-1].median())
+        if not usual > 0 or counts.iloc[-1] >= min_share * usual:
+            break
         last = prices["close"].index[-1]
         dropped.append(last)
         for name in ("adj_close", "close", "volume"):
